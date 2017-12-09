@@ -1,0 +1,18 @@
+/* 来自iconfont的样式 在线类型，当然也可以下载下来使用 */
+@import '//at.alicdn.com/t/font_212997_08xn98ddqjda38fr.css';
+@font-face {
+  font-family: 'iconfont';  /* project id 212997 */
+  src: url('//at.alicdn.com/t/font_212997_96idrl7sigflmcxr.eot');
+  src: url('//at.alicdn.com/t/font_212997_96idrl7sigflmcxr.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_212997_96idrl7sigflmcxr.woff') format('woff'),
+  url('//at.alicdn.com/t/font_212997_96idrl7sigflmcxr.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_212997_96idrl7sigflmcxr.svg#iconfont') format('svg');
+}
+[class^="el-icon-labyun"], [class*=" el-icon-labyun"] {
+  font-family:"iconfont" !important;
+  font-size: inherit;
+  font-style:normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+}

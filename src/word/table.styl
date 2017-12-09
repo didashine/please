@@ -1,0 +1,73 @@
+.table
+  position: relative
+.table table
+  width: 100%
+  border-collapse: collapse;
+  border: none;
+  table-layout: fixed;
+.table td
+  padding 1px 0
+  border-bottom: 1px solid saddlebrown;
+  border-right: 1px solid saddlebrown;
+.table .cell
+  padding: 3px 6px;
+  box-sizing border-box
+  &.select-bg
+    background-color: rgba(35,132,209, 0.25)
+.table table
+  border-left: 1px solid saddlebrown;
+  border-top: 1px solid saddlebrown;
+
+
+.table table.is_alone_row
+  border: none
+  padding 0
+
+.table td.is_alone_td
+  border: none;
+  padding: 0;
+
+.table .line
+  position: absolute;
+  display none
+  &.line-move-h
+    cursor s-resize
+  &.line-move-v
+    cursor e-resize
+.table .vertical-line
+  width: 5px;
+  left: 0;
+  top: 0;
+  margin-left -2px
+  height 100%;
+  .after
+    content ''
+    display none
+    width 1px
+    box-shadow 0px 0px 2px #2384d1
+    height 100%
+    position absolute
+    background: #2384d1;
+    top 0
+    left 50%
+    transform translateX(-50%)
+.table .horizontal-line
+  top: 0;
+  left: 0;
+  height: 5px;
+  //background: rgba(225,225,225, .4);
+  width: 800px;
+  margin-top: -2px;
+  .after
+    content ''
+    display none
+    height 1px
+    box-shadow 0px 0px 2px #2384d1
+    width 100%
+    position absolute
+    background: #2384d1;
+    left 0
+    top 50%
+    transform translateY(-50%)
+
+
