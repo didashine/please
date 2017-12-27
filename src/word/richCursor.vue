@@ -3,7 +3,7 @@
     textarea( ref='textarea')
 </template>
 <script>
-  import { selection } from './core'
+  import { selection } from './core/core'
   export default {
     name: '',
     data() {

@@ -1,13 +1,16 @@
 // new Event(el, vm)
 // el 需要绑定dom 不必填
 // vm 当前组件对象 不必填
+
 let isVue = (vm) => {
   if(!vm) return false
+  // 暂时没有找到判断vue类型的方法，先用构造器简单替代
   if(vm.constructor.name === 'VueComponent') {
     return true
   }
   return false
 }
+// 打印组件路径
 let getPath = (component) => {
   let getName = (component) => {
     let name = component.$options.name
@@ -52,15 +55,15 @@ class Event {
   }
   on(type, fn) {
     let evts = this.eventLists[type]
-    if(evts&&evts.length) { evts.push(fn) }
+    if(evts&&evts.handle) { evts['handle'].push(fn) }
     else {
-      this.eventLists[type] = [fn]
+      this.eventLists[type] = {handle: [fn], type: 'custom'}
     }
-    return this.eventLists[type].slice(-1)[0]
+    return this.eventLists[type]['handle'].slice(-1)[0]
   }
   off(type) {
     let evts = this.eventLists[type]
-    if(evts&&evts.length) { evts = [] }
+    if(evts&&evts.handle) { this.eventLists[type] = {} }
     else {
       console.warn('no that events')
     }
@@ -69,12 +72,13 @@ class Event {
       console.info("%c%s",
         "color: #4da1ff",`${getPath(this.component)}已移除${type}事件`)
     }
-    return this.eventLists[type].slice(-1)[0]
+    return this.eventLists[type]
   }
   trigger(type, ...args) {
     let evts = this.eventLists[type]
-    if(evts&&evts.length) {
-      evts.map((e, index) => {
+    if(evts&&evts.handle) {
+      let handle = evts['handle']
+      handle.map((e, index) => {
         e(...args)
       })
     }
@@ -86,7 +90,22 @@ class Event {
       el = this.el
     }
     let eventFn = this.on(type, fn)
+    this.eventLists[type].type = 'origin'
+    this.eventLists[type].el = el
     el.addEventListener(type, eventFn)
+  }
+  // 清除所有事件
+  offAll() {
+    let lists = this.eventLists
+    for(let type in lists) {
+      let evts = lists[type]
+      let evtsType = evts['type']
+      if(evtsType === 'origin') {
+        this.removeEvent(type)
+      }else {
+        this.off(type)
+      }
+    }
   }
   removeEvent(el, type) {
     if(typeof el == 'string') {
@@ -94,8 +113,10 @@ class Event {
       el = this.el
     }
     let evts = this.eventLists[type]
-    if(evts&&evts.length) {
-      evts.map((e, index) => {
+    if(evts&&evts.handle) {
+      let handle = evts['handle']
+      el = el || evts['el']
+      handle.map((e, index) => {
         el.removeEventListener(type, e)
       })
       this.off(type)

@@ -10,7 +10,7 @@
     data() {
       return {
         operation: [{
-          name: '合并行',
+          name: '合并单元格',
           type: 'merge'
         }]
       }
@@ -33,6 +33,7 @@
         e.stopPropagation()
       },
       operationClick(op, e) {
+        e.stopPropagation()
         console.log('hhh')
         this.$emit('operation.click',e, op.type)
         let contextMenu = this.$refs.contextMenu

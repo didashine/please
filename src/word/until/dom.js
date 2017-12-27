@@ -10,20 +10,20 @@ function camelCase(name) {
 const trim = function(string) {
   return (string || '').replace(/^[\s\uFEFF]+|[\s\uFEFF]+$/g, '');
 };
-// getStyle
-export function getStyle (element, styleName) {
-  if (!element || !styleName) return null;
-  styleName = camelCase(styleName);
-  if (styleName === 'float') {
-    styleName = 'cssFloat';
-  }
-  try {
-    const computed = document.defaultView.getComputedStyle(element, '');
-    return element.style[styleName] || computed ? computed[styleName] : null;
-  } catch(e) {
-    return element.style[styleName];
-  }
-}
+// // getStyle
+// export function getStyle (element, styleName) {
+//   if (!element || !styleName) return null;
+//   styleName = camelCase(styleName);
+//   if (styleName === 'float') {
+//     styleName = 'cssFloat';
+//   }
+//   try {
+//     const computed = document.defaultView.getComputedStyle(element, '');
+//     return element.style[styleName] || computed ? computed[styleName] : null;
+//   } catch(e) {
+//     return element.style[styleName];
+//   }
+// }
 
 /* 是否存在class */
 export function hasClass(el, cls) {
@@ -59,6 +59,42 @@ export function addClass(el, cls) {
   }
 };
 
+export function siblingIncludeOwnerAndIndex(node) {
+  let parent = node.parentNode
+  let sibling = [...parent.childNodes]
+  let i;
+  for(i =0; i<sibling.length; i++) {
+    if(sibling[i] == node) {
+      break;
+    }
+  }
+  i = i==sibling.length ? i-1: i
+  return {
+    index: i,
+    sibling
+  }
+
+}
+
+export function prevNodes(node) {
+  let sio = siblingIncludeOwnerAndIndex(node)
+  return sio.sibling.filter((sibli, i) => {
+    // console.log(i, sio.index, 'i')
+    return sio.index>i
+  })
+}
+export function prevNodeTxtLength(node) {
+  // console.log(prevNode(node), 'prevNode(node)')
+  let l = 0
+  prevNodes(node).map((n) => {
+    // console.log(n, n.innerText.length)
+    l+=n.innerText.length
+  })
+  return l
+}
+export function prevNode(node) {
+  return [...prevNodes(node)].slice(-1)[0]
+}
 export function toggleClass(el, cls) {
   hasClass(el, cls) ?
     removeClass(el, cls) :
@@ -85,5 +121,38 @@ export function removeClass(el, cls) {
   if (!el.classList) {
     el.className = trim(curClass);
   }
+};
+export let getTextNode = (node) => {
+  if(node === undefined) {return undefined}
+  if(node.nodeType == 3) {
+    return node
+  }
+  let child = [...node.childNodes]
+  return child.filter((node) => {
+    if(node.nodeType == 3) return true
+  })[0]
+}
+export function getStyle (obj, css) {
+  return obj.currentStyle ? obj.currentStyle[css] :
+    getComputedStyle(obj, false)[css]
+};
+export let range
+if (document.createRange) range = function(node, start, end, endNode) {
+  node = getTextNode(node)
+  endNode = getTextNode(endNode)
+  let r = document.createRange()
+  r.setEnd(endNode || node, end)
+  r.setStart(node, start)
+  return r
+}
+else range = function(node, start, end) {
+  node = getTextNode(node)
+  let r = document.body.createTextRange()
+  try { r.moveToElementText(node.parentNode) }
+  catch(e) { return r }
+  r.collapse(true)
+  r.moveEnd("character", end)
+  r.moveStart("character", start)
+  return r
 };
 

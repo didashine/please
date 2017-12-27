@@ -1,5 +1,5 @@
-import { selection } from './core'
-import event from './event'
+import { selection } from './core/core'
+import event from './until/event'
 
 let setCursor = () => {
 

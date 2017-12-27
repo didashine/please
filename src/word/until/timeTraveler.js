@@ -1,4 +1,11 @@
 // 时间旅行者， 可以在几个版本里面穿梭，简单点讲就是撤回，逆撤回
+let record = function (v) {
+  return {
+    v,
+    t: new Date(),
+    hash: new Date().getTime()
+  }
+}
 function timeTraveler(size=100) {
   let history = []
   let version = 0
@@ -10,18 +17,19 @@ function timeTraveler(size=100) {
     },
     // 逆撤回
     Redo() {
-      // console.log(version, history, 'hhhh')
       version = version>= (history.length-2) ? history.length-1: ++version
-      console.log(version, history[version]['t'], history)
       return history[version]['v']
     },
     record(v) {
-      let length = history.push({v, t: new Date()})
+      let length = history.push(record(v))
       version= --length
       if(length>size) {
         history.shift()
         version <= 1 ? 0 : version--
       }
+    },
+    history() {
+      return history
     }
   }
   return api
