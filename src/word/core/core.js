@@ -148,10 +148,17 @@ export let normalTb = (row, col) => {
   let tbw = '900'
   let tb = () => {
     let normal = {
+        // 是否有选中
+        t_s: false,
+        // 单元格宽度
         t_w: 0,
+        // 单元格高度
         t_h: 0,
+        // 显而易见
         colspan: 1,
+        // 显而易见
         rowspan: 1,
+        // 段落内容
         t_bp: [normalBp()]
     }
     return normal
@@ -161,8 +168,9 @@ export let normalTb = (row, col) => {
   for(let r=0; r<row; r++) {
     table.push({
       // 是否是单独一个tr
-      has_a_r: (r == 1 || r== 5)? true: false,
-      t: []
+      has_a_r: false,
+      t: [],
+      col_l: col
     })
     for(let c=0;c<col;c++) {
       table[r]['t'].push(tb())
@@ -170,7 +178,9 @@ export let normalTb = (row, col) => {
   }
   table.map((tr) => {
     tr['t'].map((t, i) => {
+      console.log(i, 'i')
       t.t_w = tbw/col
+      console.log(t.t_w, 't_t_w')
       t.i= i
     })
   })
@@ -290,17 +300,3 @@ export class selection {
   }
 }
 
-class richTxt {
-
-}
-
-// 对象解析
-// 段落内容修饰
-// bp
-let obj = {
-  // 段落
-  bp() {
-    return ''
-  }
-
-}
