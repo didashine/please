@@ -1,34 +1,47 @@
 
 import {range} from "./edit";
-let getTextNode = (node) => {
-  if(node.nodeType == 3) {
-    return node
-  }
-  let child = [...node.childNodes]
-  return child.filter((node) => {
-    if(node.nodeType == 3) return true
-  })[0]
+// let getTextNode = (node) => {
+//   if(node.nodeType == 3) {
+//     return node
+//   }
+//   let child = [...node.childNodes]
+//   return child.filter((node) => {
+//     if(node.nodeType == 3) return true
+//   })[0]
+// }
+let inTable = (node) => {
 }
 export default class Doc {
   constructor() {
     this.place = null
-    this.line = null
     this.range = null
     // 是否删除到了第一位
     this.deleteI = -1
-    this.switchSpan = false
+    // typeWriting typeWritingEnd originWriting
+    this.spellStatus = 'originWriting'
+    this.tableModel = null
+    // this.inComplate = false
+  }
+  updateTableModel(model) {
+    this.tableModel = model
+  }
+  setSpellStatus(type) {
+    this.spellStatus = type
   }
   // node 当前bp， deleteI, r当前ranges对象
-  updateStruture(node, deleteI, r) {
-    // let txtNode = getTextNode(node)
-    console.log(node, 'node..........', r.commonAncestorContainer)
+  updateStruture(node, deleteI, r, exist) {
+
     this.place = {
+      docPath: node.dataset.id.match(/\d+/g)[0],
+      // collapsed
       bpNode: node,
       type: '',
+      inTable: !!node.parentNode.parentNode.dataset.intable,
       // bp相对的index
       bpRelativeI: parseInt(node.dataset.index),
       // bp绝对路径
-      bpAbsolutePath: node.dataset.id.replace(/:/g, '')
+      bpAbsolutePath: node.dataset.id.replace(/:/g, ''),
+      ...(exist||{})
     }
     let editTxtNode = r.commonAncestorContainer
     this.range = {
@@ -41,9 +54,6 @@ export default class Doc {
       endOffset: r.endOffset
     }
     this.deleteI = deleteI !== undefined ? deleteI : -1
-  }
-  updateLine(options) {
-    this.line = options
   }
 }
 

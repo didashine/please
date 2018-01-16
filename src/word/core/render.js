@@ -3,6 +3,7 @@ let hasFillInData = (txt) => {
   let fillReg = /@{.+}/
   return fillReg.test(txt)
 }
+
 let renderInd = (h, bp, b, data_id, bi) => {
     return (
       <span
@@ -24,7 +25,7 @@ let renderInd = (h, bp, b, data_id, bi) => {
         }
         class={`b_txt ${data_id}.:${bi} ${b.flag ? 'active': ''}`}
         data-index={bi} data-id={`${data_id}.:${bi}`}>
-        {b.t_txt}
+          {b.t_txt}
         {showIcon(h, b, `${data_id}.:${bi}`)}
       </span>
     )
@@ -42,17 +43,17 @@ let showIcon = (h, b, data_id) => {
   }
 }
 export let render = {
-  renderByType(h, t, data, data_id, index) {
+  renderByType(h, t, data, data_id, index, inTable) {
     let map = {
       tb: 'renderTable',
       bp: 'renderBp'
     }
-    return map[t] ? render[map[t]].call(this, h, data, data_id, index) : null
+    return map[t] ? render[map[t]].call(this, h, data, data_id, index, inTable) : null
   },
   // 渲染表格
   renderTable(h, table, data_id) {
     return (
-      <x-table {...{props: { renderData: table, app: this, dataId: data_id}}}></x-table>
+      <x-table class='word_bp' data-type='table' {...{props: { renderData: table, app: this, dataId: data_id}}} ref={data_id}></x-table>
     )
   },
   renderB(h, bp, data_id) {
@@ -63,19 +64,17 @@ export let render = {
         )
       })
     )
-
   },
   // 渲染普通行
-  renderBp(h, bp, data_id, index) {
+  renderBp(h, bp, data_id, index, inTable) {
     return (
-      <div class="bp_format" data-type={bp.t}
+      <div class={!!inTable ? "bp_format "+data_id+'$bp': "word_bp bp_format "+data_id+'$bp' } data-type={bp.t} data-intable={!!inTable}
       >
-        <div class="bp_indent" style={parse(bp)} >
+        <div class="bp_indent" style={parse(bp)}>
             <div
               class={`bp_txt ${data_id}`}
               data-index={index}
-              data-id={data_id }
-              ref={data_id}
+              data-id={data_id}
             >
               {render.renderB.call(this, h, bp, data_id+ '.:m')}
             </div>

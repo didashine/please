@@ -2,29 +2,41 @@ export let NORMAL_CONFIG = {
   bp: {
     textAlign: 'left',
     marginLeft: 0,
-    heads: true,
-    headings: '正文'
+    heads: false,
+    headings: '正文',
+    space: 1.2,
   },
   bpTxt: {
-    fontSize: 11,
+    fontSize: 48,
     color: '#000',
-    fontFamily: 0,
+    fontFamily: 2,
     textDecoration: 'none'
   }
+}
+export let pageConfig = {
+  operateHeight: 1003,
+  height: 1083,
+  width: 792
 }
 export let headingsConfig = [
     {
       name: '正文',
-      bp: {height: '33px'},
+      bp: {
+        // height: '24px',
+        space: 1.6
+      },
       bpTxt: {
         color: 'black',
-        fontSize: '12px',
+        fontSize: '15px',
         lineHeight: '18px'
       }
     },
     {
       name: '标题',
-      bp: {height: '84px'},
+      bp: {
+        // height: '86px',
+        space: 1.8
+      },
       bpTxt: {
         lineHeight: '67px',
         fontSize: '48px',
@@ -33,7 +45,10 @@ export let headingsConfig = [
     },
     {
       name: '副标题',
-      bp: {height: '79px'},
+      bp: {
+        // height: '79px',
+        space: 2.5
+      },
       bpTxt: {
         lineHeight: '36px',
         fontSize: '32px',
@@ -42,7 +57,10 @@ export let headingsConfig = [
     },
     {
       name: '标题1',
-      bp: { height: '47px'},
+      bp: {
+        // height: '47px',
+        space: 2.0
+      },
       bpTxt: {
         lineHeight: '33px',
         fontSize: '24px',
@@ -51,10 +69,13 @@ export let headingsConfig = [
     },
     {
       name: '标题2',
-      bp: { height: '36px'},
+      bp: {
+        // height: '36px',
+        space: 1.9
+      },
       bpTxt:  {
         lineHeight: '21px',
-        fontSize: '26px',
+        fontSize: '19px',
         color: '#1b2733'
       }
     }
@@ -92,15 +113,39 @@ export let fontSize = [{
 }];
 export let fontFamily = [
   {
-  name: '黑体',
-  id: 0
-},{
-  name: '楷体',
-  id: 1
-},{
-  name: '宋体',
-  id: 2
-  }]
+    name: '黑体',
+    css: 'Heiti SC',
+    id: 0
+  },{
+    name: '楷体',
+    css: 'Kai',
+    id: 1
+  },{
+    name: '宋体',
+    css: "Songti, SimSun, Songti SC, STsong",
+    id: 2
+  },
+  {
+    name: 'Arial',
+    css: 'Arial',
+    id: 3
+  },
+  {
+    name: '华文仿宋',
+    css: 'STFangsong',
+    id: 4
+  },
+  {
+    name: '隶书',
+    css: 'LiSu',
+    id: 5
+  },
+  {
+   name: '鬼知道什么假宋体(金亮要求的宋体)',
+   css: 'Songti SC',
+   id: 6
+  }
+]
 export let headings = [
   {
     name: '正文',

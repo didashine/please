@@ -136,6 +136,14 @@ export function getStyle (obj, css) {
   return obj.currentStyle ? obj.currentStyle[css] :
     getComputedStyle(obj, false)[css]
 };
+export let getOffset = (obj,type) => {
+  type = (type === 'left') ? 'offsetLeft' : 'offsetTop'
+  let l = obj[type]; // 对应父容器的上边距
+  while (obj = obj.offsetParent) {
+    l += obj[type];
+  }
+  return parseInt(l)
+};
 export let range
 if (document.createRange) range = function(node, start, end, endNode) {
   node = getTextNode(node)
@@ -155,4 +163,9 @@ else range = function(node, start, end) {
   r.moveStart("character", start)
   return r
 };
+
+export let isHTMLElement = (e) => {
+  return (e instanceof HTMLElement)
+}
+
 

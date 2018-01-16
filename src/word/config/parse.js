@@ -24,7 +24,10 @@ export let parse = (bpConf, txtConf, priority) => {
       nativeConfig[pro] = parseBox(fontSize, conf[pro])
     }
     else if(pro == 'fontFamily') {
-      nativeConfig[pro] = parseBox(fontFamily, conf[pro])
+      nativeConfig[pro] = parseBox(fontFamily, conf[pro], {name: 'css'})
+    }
+    else if(pro == 'space') {
+
     }
     else {
       nativeConfig[pro] = conf[pro]
@@ -40,3 +43,4 @@ export let parse = (bpConf, txtConf, priority) => {
   // console.timeEnd('parse')
   return nativeConfig
 }
+

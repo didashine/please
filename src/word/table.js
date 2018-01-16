@@ -2,11 +2,11 @@ import './table.styl'
 import drag from './until/drag'
 import {addClass, removeClass} from "./until/dom";
 // import Event from './until/event'
-import { debounce } from './until/debounce'
+import { once } from './until/until'
 import code from './core/code'
 import {bind} from "./core/eventBind";
 import {render} from "./core/render";
-import {splice, getMutable, replace, setProperty, getProperty, mined, maxed} from "./data/immutable";
+import {splice, getMutable, replace, setProperty, getProperty, mined, push} from "./data/immutable";
 
 // function setProperty (obj, name, value) {
 //   name = (name + '').split(".");
@@ -29,9 +29,7 @@ function timeTraveler(size=100) {
    },
    // 逆撤回
    Redo() {
-     // console.log(version, history, 'hhhh')
      version = version>= (history.length-2) ? history.length-1: ++version
-     console.log(version, history[version]['t'], history)
      return history[version]['v']
    },
    record(v) {
@@ -83,7 +81,6 @@ let operation = function() {
   // 版本回退
   let history = timeTraveler(12)
   // 这里等待接管数据中心 wating
-  let dc
   // 边界对象
   let boundaryObj = {};
   // 拖拽对象
@@ -157,7 +154,6 @@ let operation = function() {
       let eventManger  = bind(this)
       let vertical = this.$refs.vertical
       let horizontal = this.$refs.horizontal
-      console.log(this.$parent)
       let on = eventManger.on.bind(this)
       dragEls = {
         vel: vertical,
@@ -199,43 +195,17 @@ let operation = function() {
       on('ctrl.up', (e) => {
         api.setStatus('down', false)
       })
-      // command 91 shift 16 z 90
-      // debounce command+z 命令按键
-      on('command+z', debounce((e) => {
-        this.tableRenderData = history.Undo()
-      }, 200, true))
-      let commandShiftZ = debounce((e) => {
-        this.tableRenderData = history.Redo()
-      }, 200, true)
-      on('command+shift+z', (e) => {
-        console.log('command+shift+z')
-        // commandShiftZ(e)
-      })
-      // 全局contextmenu事件
-      on(document,'contextmenu', (e) => {
-        e.stopPropagation()
-        e.preventDefault()
-        this.$contextMenu.updatePos(e)
-      })
-      // 全局click事件
-      on(document, 'dblclick', (e) => {
-        if(!api.getStatus()['inSelect']) {
-          this._cancelSelect()
-          api.setStatus('cellMatrix', [])
-          // api.setStatus('mergeRow', [])
-          // api.setStatus('mergeCol', [])
+      on(boundaryEl, 'click', (e) => {
+        if(api.getStatus('inSelect')) {
+          e.stopPropagation()
         }
       })
+      // command 91 shift 16 z 90
+      // debounce command+z 命令按键
 
-      on(document, 'click', () => {
-        this.$contextMenu.hide()
-      })
-      // contextmenu选择操作事件
-      on('contextmenu.operation.click', (e, type) => {
-        console.log('yyl')
-        this._mergeCells()
-        this._cancelSelect()
-      })
+      // on('command+shift+z', debounce((e) => {
+      //   this.tableRenderData = history.Redo()
+      // }, 200, true))
 
     },
     // args => [el/evt, evt/fn, fn/undefined]
@@ -258,14 +228,15 @@ let operation = function() {
     //   }
     //   on(...args)
     // },
-    // 合并行
-    _mergeRow(colIndex, rows) {
-      let data = this.tableRenderData.m
-      data.map((tr) => {
-        tr.t.map((td, i) => {
-
-        })
-      })
+    //
+    _initSel() {
+      if(!api.getStatus()['inSelect']) {
+        this._cancelSelect()
+        api.setStatus('cellMatrix', [])
+        this.app.updateTableModel(null)
+        // api.setStatus('mergeRow', [])
+        // api.setStatus('mergeCol', [])
+      }
     },
     // 合并单元格
     _mergeCells() {
@@ -273,7 +244,6 @@ let operation = function() {
       let path = word.dataset.id.replace(/:/g, '')
       let data = this.app.worder
       let renderData = this.renderData
-      console.log(path, renderData, '......')
       let cellMatrix = api.getStatus()['cellMatrix']
       let start = { y: cellMatrix[0][0][1], x: cellMatrix[0][0][0]}
       let end = { y: cellMatrix.slice(-1)[0][0][1], x: cellMatrix.slice(-1)[0].slice(-1)[0][0]}
@@ -282,16 +252,18 @@ let operation = function() {
       for(let i=start.y; i<=end.y; i++) {
         for(let j = start.x; j<=cellMatrix.slice(0)[0].slice(-1)[0][0]; j++) {
           if(i==start.y)  {
-            let tempw = getMutable(renderData, `m.${i}.t.${j}.t_w`)
+            let tempw = getMutable(renderData, `m.${i}.td.${j}.t_w`)
             w+=tempw
           }
           if(j==start.x) {
-            let temph = getMutable(renderData, `m.${i}.t.${j}.t_h`)
+            let temph = getMutable(renderData, `m.${i}.td.${j}.t_h`)
             h+=temph
           }
         }
       }
+      // 对矩阵进行  行(tr标签) 遍历
       for(let i = 0; i< cellMatrix.length; i++) {
+        // 拿到当前行的td盒子坐标，详细查询cellMatrix矩阵结构，见变量定义注释
         let row = cellMatrix[i][0][1]
         let begin = 0
         let num = 0
@@ -302,12 +274,37 @@ let operation = function() {
           begin = cellMatrix[i][0][0]
           num = cellMatrix[i].length
         }
-        data = splice(data,`${path}.m.${row}.t`,  begin, num)
+        // 存储移除掉的td的原始位置
+        let addNum = getProperty(data, `${path}.m.${row}.destroy`).length
+        let destroyIndex = []
+        for(let n = 0;n<num;n++) {
+          destroyIndex.push(parseInt(begin)+n+ addNum);
+        }
+        destroyIndex = destroyIndex.length<=1 ? destroyIndex: [destroyIndex]
+        data = push(data, `${path}.m.${row}.destroy`, ...destroyIndex)
+        // data = splice(data,`${path}.m.${row}.td`,  begin, num)
+        //let otherTr = dat
+        //
+
+        data = setProperty(
+          data,
+          `${path}.m.${row}.td.${+cellMatrix[i][0][0]}.merge`,
+          {
+            colspan: cellMatrix[0].length,
+            rowspan: cellMatrix.length- i,
+            isMerge: true
+          })
+        let rs = num+ (+begin);
+        for(;begin< rs;begin++) {
+          // 把不需要显示的td设置为false
+          data = setProperty(data, `${path}.m.${row}.td.${begin}.show`, false)
+        }
       }
-      data = setProperty(data, `${path}.m.${start.y}.t.${start.x}.colspan`, cellMatrix[0].length)
-      data = setProperty(data, `${path}.m.${start.y}.t.${start.x}.rowspan`, cellMatrix.length)
-      data = setProperty(data, `${path}.m.${start.y}.t.${start.x}.t_w`, w)
-      data = setProperty(data, `${path}.m.${start.y}.t.${start.x}.t_h`, h)
+      data = setProperty(data, `${path}.m.${start.y}.td.${start.x}.colspan`, cellMatrix[0].length)
+      data = setProperty(data, `${path}.m.${start.y}.td.${start.x}.rowspan`, cellMatrix.length)
+      data = setProperty(data, `${path}.m.${start.y}.td.${start.x}.t_w`, w)
+      data = setProperty(data, `${path}.m.${start.y}.td.${start.x}.t_h`, h)
+
       this.app.worder = data
       history.record(data)
       api.setStatus('cellMatrix', [])
@@ -316,10 +313,9 @@ let operation = function() {
       let data =this.renderData.m
       let tableRenderData = this.app.worder
       let dataId = replace(this.dataId)
-      console.log(dataId)
       data.map((tr, index) => {
-        tr.t.map((td, i) => {
-          tableRenderData = setProperty(tableRenderData, `${dataId}.m.${index}.t.${i}.t_s`, false)
+        tr.td.map((td, i) => {
+          tableRenderData = setProperty(tableRenderData, `${dataId}.m.${index}.td.${i}.t_s`, false)
         })
       })
       this.app.worder = tableRenderData
@@ -355,13 +351,13 @@ let operation = function() {
       }
       let allTds = [];
       dragTable.on('down', (el, {e}) => {
+       this.app.updateTableModel({el})
        tableRenderData = this.app.worder
        // e.stopPropagation()
        allTds = Iterator()
        api.setStatus('inSelect', true)
       })
       dragTable.on('move', (el, {originX, originY, currentX, currentY}) => {
-        console.log('moce')
         let reverse = currentX-originX<0 ? true: false
         let area = {
           topToC: reverse? currentY: originY,
@@ -385,11 +381,10 @@ let operation = function() {
             tableRenderData = setProperty(tableRenderData, td.proto+'.t_s', false)
           }
         })
-        console.log(this.app, 'hhhh', tableRenderData.getIn(['m', 0, 'm', 2]))
         this.app.worder = tableRenderData
         // this.tableRenderData = tableRenderData
       })
-      dragTable.on('up', () => {
+      dragTable.on('up', (el, {e}) => {
         // let rows = api.getStatus()['mergeRow']
         // let cols = api.getStatus()['mergeCol']
         let cellMatrix = api.getStatus()['cellMatrix']
@@ -408,7 +403,7 @@ let operation = function() {
             matrix.push(coordinate)
           }
         })
-        // console.log(cellMatrix, 'matrix........')
+        this.app.updateTableModel({el, cellMatrix})
         api.setStatus('cellMatrix', cellMatrix)
         api.setStatus('inSelect', false)
       })
@@ -431,7 +426,6 @@ let operation = function() {
         }
       })
       dragLine.on('up', (el, args) =>  {
-        // console.time('up')
         let inDrag = api.getStatus().inDrag
         if(!inDrag) return;
         // ......
@@ -449,13 +443,10 @@ let operation = function() {
             let temh = tr.t_h
             if(temh == 0) {
               temh = api.getStatus()['originH']
-              // console.log(temh, 'temh', )
             }
-            // console.log('[123]',  temh+ move*arith)
-            tableRenderData = setProperty(tableRenderData, `m.${path}.t.${i}.t_h`, temh+ move*arith)
+            tableRenderData = setProperty(tableRenderData, `m.${path}.td.${i}.t_h`, temh+ move*arith)
             // tr.t_h = temh+ move*arith
           })
-          // console.log(tableRenderData, '....', getIn(tableRenderData, [0]))
         }else {
           move = args.moveX
           arith = type == 'left' ? -1: 1
@@ -474,12 +465,11 @@ let operation = function() {
               tdObj['t'].map((td, i) => {
                 if (path == i) {
                   let temh = td.t_w
-                  tableRenderData = setProperty(tableRenderData, `m.${index}.t.${i}.t_w`, temh + move * arith)
-                  // console.log(endValue, 'hhhhhhhh')
+                  tableRenderData = setProperty(tableRenderData, `m.${index}.td.${i}.t_w`, temh + move * arith)
                   // 如果是非第一个的单元格
                   if (type == 'right'&&i<tdObj.col_l-1) {
                     let temh = getProperty(data, `m.${index}.t.${++i}.t_w`)
-                    tableRenderData = setProperty(tableRenderData, `m.${index}.t.${i}.t_w`, temh - move * arith)
+                    tableRenderData = setProperty(tableRenderData, `m.${index}.td.${i}.t_w`, temh - move * arith)
                   }
                 }
               })
@@ -516,10 +506,8 @@ let operation = function() {
         line.style.top = 0+ 'px';
         line.style.display = 'none'
         el.getElementsByClassName('after')[0].style.display = 'none'
-        // console.log(getIn(tableRenderData, [0]), 'endValue')
         history.record(tableRenderData)
         this.tableRenderData = tableRenderData
-        // console.timeEnd('up')
       })
 
 
@@ -733,14 +721,13 @@ export default {
   mounted() {
     let tableBoundary = this.$refs.tableBoundary
     this.bind(tableBoundary)
-    // console.log(this.$refs[1], 'lllll')
   },
   methods: {
     ...operation(),
   },
   render() {
     return (
-      <div  contentEditable='false' class="table" data-id={this.dataId}  ref='tableBoundary' style={{width: this.renderData.w+ 'px'}}>
+      <div  contentEditable='false' class="table" data-id={this.dataId}  ref='tableBoundary' style={{width: this.renderData.w}}>
         <div>
           <div class="line vertical-line" ref='vertical'>
             <span class="after"></span>
@@ -749,7 +736,7 @@ export default {
             <span class="after"></span>
           </div>
         </div>
-        <table style={{width: this.renderData.w+ 'px'}} cellPadding="0" cellSpacing="0">
+        <table style={{width: this.renderData.w}} cellPadding="0" cellSpacing="0">
           {
             this._l(this.renderData.m, (tr, tri) => {
               return (
@@ -764,20 +751,15 @@ export default {
                 >
                   {
                     renderRow(h, tr, (
-                      this._l(tr['t'], (td, i) => {
+                      this._l(tr['td'], (td, i) => {
                         return (
+                          td['show']?
                           <td
                             style={{height: td.t_h+ 'px', width: td.t_w-3+ 'px'}}
                               colspan={td.colspan}
                               rowspan={td.rowspan}
-                              data-id={`${this.dataId}.:m.:${tri}.:t.:${i}`}
+                              data-id={`${this.dataId}.:m.:${tri}.:td.:${i}`}
                               data-key={td.i}
-
-                              onClick={(e) => {
-                                if(e.target.tagName === 'TD') {
-                                  let proto = e.target.dataset.id.replace(/:/g, '')
-                                }
-                              }}
                               ref={i}
 
                           >
@@ -795,13 +777,12 @@ export default {
                               {
                                 this._l(td['t_bp'], (bp, bpi)=> {
                                   return (
-                                    render.renderByType.call(this.$parent, h, bp.t, bp, `${this.dataId}.:m.:${tri}.:t.:${i}.:t_bp.:${bpi}`, bpi)
+                                    render.renderByType.call(this.$parent, h, bp.t, bp, `${this.dataId}.:m.:${tri}.:td.:${i}.:t_bp.:${bpi}`, bpi, true)
                                   )
                                 })
                               }
                             </div>
-
-                          </td>
+                          </td>: null
                         )
                       })
                     ))

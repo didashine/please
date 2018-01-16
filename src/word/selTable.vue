@@ -1,7 +1,10 @@
 <template lang="pug">
   div.sel-table( @mouseover='setStartPos', :style='{width: tableWidth, height: tableHeight}', ref='selTable')
-    div.rows( v-for='row in boxs[0]')
-      div.box( v-for='col in boxs[1]', :data-index='row+"."+col', @click='setTable')
+    div.sel-box
+      div.rows( v-for='row in boxs[0]')
+        div.box( v-for='col in boxs[1]', :data-index='row+"."+col', @click='setTable')
+    div.sel-menu
+      span {{scale[0]}} 行 x {{scale[1]}} 列
 </template>
 <script>
   import {addClass, removeClass} from './until/dom'
@@ -22,7 +25,7 @@
         return 22*this.boxs[1]+ 'px'
       },
       tableHeight() {
-        return 22*this.boxs[0]+ 'px'
+        return 22*this.boxs[0]+ 8+ 'px'
       }
     },
     mounted() {
@@ -60,13 +63,15 @@
         let reverse = clientX-startPos[0]<0 ? true: false
         let activeBox = []
         let wh = (type) => {
-
+           // 鼠标位置
           let v = type == 'width' ? clientX: clientY
-          let wOrH = type == 'width' ? 'tableWidth': 'tableHeight'
+          // let wOrH = type == 'width' ? 'tableWidth': 'tableHeight'
           let i = type == 'width' ? 0: 1
+          // 鼠标位置到 selTable最左或上的距离
           if(v-this.tablePos[i]<=0) {
             return false
           }
+          // 12指上padding或者左padding
           let wh = v-this.tablePos[i]-12
           let num = Math.ceil(Math.abs(wh/22))
           // console.log(num)
@@ -140,6 +145,7 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2)
     background #fff
     z-index 200
+    cursor pointer
     .rows
       margin 0 0 8px 0
       font-size 0
@@ -152,7 +158,13 @@
         border 1px solid #cc
         border-radius 3px
         cursor pointer
-        transition 0.35 all
+        background rgba(35,132,209, 0)
+        transition 0.55s all
         &.active
           background rgba(35,132,209, 0.25)
+    .sel-menu
+      text-align center
+      font-size 12px
+      color black
+      padding-bottom 8px
 </style>

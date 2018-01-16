@@ -72,6 +72,18 @@ export let deleted = (el, doc) => {
     place: doc.place
   }
 }
+// 修改样式
+export let uStyle = (el, doc) => {
+  let st = editObj(doc)
+  let retainsTxt = st.editTxt.substr(0, st.startOffset)
+  let interceptTxt = st.editTxt.substr(st.startOffset, st.editTxt.length)
+  return {
+    ...st,
+    retainsTxt: retainsTxt.trim() === '' ? '\u00A0': retainsTxt,
+    interceptTxt: interceptTxt.trim() === '' ? '\u00A0': interceptTxt
+  }
+}
+
 // 新建行
 export let newRow = (el, doc) => {
   let st = editObj(doc)
@@ -93,7 +105,11 @@ export let edit = (el, doc) => {
   }
 }
 
+// 分页
+export let switchPage =(el, doc) => {
+  let st = editObj(doc)
 
+}
 
 
 

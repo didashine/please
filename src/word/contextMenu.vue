@@ -1,5 +1,5 @@
 <template lang="pug">
-  div.contextMenu( ref='contextMenu', @click='contextClick')
+  div.contextMenu( ref='contextMenu', @click='contextClick', v-show='cMshow')
     ul.opera_tb
       li( v-for="op in operation", @click='operationClick(op, $event)')
         span {{op.name}}
@@ -12,7 +12,8 @@
         operation: [{
           name: '合并单元格',
           type: 'merge'
-        }]
+        }],
+        cMshow: false
       }
     },
     methods: {
@@ -23,21 +24,21 @@
         let contextMenu = this.$refs.contextMenu
         contextMenu.style.left = x+ 'px'
         contextMenu.style.top = y+ 'px'
-        contextMenu.style.display = 'block'
+        console.log('....')
+        this.cMshow = true
+        // contextMenu.style.display = 'block'
       },
       hide(e) {
         let contextMenu = this.$refs.contextMenu
-        contextMenu.style.display = 'none'
+        this.cMshow = false
       },
       contextClick(e) {
         e.stopPropagation()
       },
       operationClick(op, e) {
         e.stopPropagation()
-        console.log('hhh')
         this.$emit('operation.click',e, op.type)
-        let contextMenu = this.$refs.contextMenu
-        contextMenu.style.display = 'none'
+        this.cMshow = false
       }
     }
 
@@ -50,9 +51,10 @@
     width 200px
     height auto
     position absolute
-    display none
     z-index 9999
     background #fff
+    top 0
+    left 0
     ul.opera_tb
       padding 10px 0
       li

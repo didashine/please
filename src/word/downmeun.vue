@@ -20,6 +20,16 @@
       },
       showId: {
         type: Boolean
+      },
+      tooltype: String,
+      prop: {
+        type: Object,
+        default() {
+          return {
+            id: 'id',
+            name: 'name'
+          }
+        }
       }
     },
     data() {
@@ -33,10 +43,12 @@
         if(this.showId) {
           return this.active
         }
+        let prop = this.prop
+        let id = prop['id']
+        let name = prop['name']
         for(let i = 0;i<this.list.length;i++) {
-          console.log(this.activeId, this.list)
-          if(this.list[i].id == this.active) {
-            return this.list[i].name
+          if(this.list[i][id] == this.active) {
+            return this.list[i][name]
           }
         }
 
@@ -61,8 +73,10 @@
     },
     methods: {
       itemClick(item) {
-        this.active = item.id
-        this.$emit('itemChange', item)
+        let prop = this.prop
+        let id = prop['id']
+        this.active = item[id]
+        this.$emit('itemChange', item, this.tooltype)
         this.downShow = false
       }
     }

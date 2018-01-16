@@ -1,5 +1,5 @@
 import Event from './event'
-export default function(el, stop) {
+export default function(el) {
   let nw = new Event(el)
   // 鼠标按下时的位置
   let cx =0, cy =0;

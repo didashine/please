@@ -1,9 +1,15 @@
-const {fromJS, List, getIn, Map,setIn,  isKeyed, toJs} = require('immutable')
-let fos = Map({a: 1, b: 3333, c: [1,2,3]})
-fos.slice(['a', 'c'], 0, 1)
-console.log(List([1,2,3]), 'llll', List([1,2,3]).toJS())
-console.log(fos, 'y')
-
+const {fromJS, List, getIn, Map,setIn,splice, removeIn, isKeyed, toJs} = require('immutable')
+// let arr = []
+// let fos = Map({a: 1, b: 3333, c: [{a: 1, b: 2}, {c: 1, d: 2}]})
+// arr.push[fos]
+// fos.getIn(['c']).slice(0, 1)
+// let h = fos.getIn(['c'])
+// h.splice(0, 1)
+// fos = fos.setIn(['c'], h)
+// arr.push=[fos]
+// arr.map((r) => {
+//   console.log(r.getIn(['c']))
+// })
 // let ax = fromJS({ a: {b: [10, 20, 30]}, c: 40}, function (key, value, path) {
 //   console.log(key, value, path)
 //   return isKeyed(value) ? value.toOrderedMap() : value.toList()
@@ -40,6 +46,30 @@ console.log(fos, 'y')
 // let f = Imm.without(fruits, 'banana', { byValue: true });
 // console.log(f,fruits, 'f', f[1])
 export default () => {
+  const Immutable = require('seamless-immutable').static
+  let arr = []
+  let fos = Map({a: 1, b: 3333, c: [{a: 1, b: 2}, {c: 1, d: 2}]})
+  arr.push(fos)
+  fos.getIn(['c']).slice(0, 1)
+  let h = fos.getIn(['c'])
+  h.splice(0, 1)
+  fos = fos.setIn(['c'], h)
+  arr.push(fos)
+  arr.map((r) => {
+    console.log(r.getIn(['c']))
+  })
+  var stateV1 = fromJS({
+    users: [
+      { name: 'Foo' },
+      { name: 'Bar' }
+    ]
+  });
+  let hs = stateV1.getIn(['users'])
+  let users = List(hs).push({name: 1111})
+  let stateV2 = stateV1.setIn(['users'], users.toJS())
+  let sv2 = stateV2.getIn(['users'])
+  let sv2m = sv2.slice(0,1)
+  sv2.splice(0, 1)
 
-
+  console.log(stateV2.getIn(['users']))
 }

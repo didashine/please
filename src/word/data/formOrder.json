@@ -1,0 +1,113 @@
+{
+  "wordRender": "",
+  "watermark": false,
+  "watermarkType": 1,
+  "template_id": 1,
+  "template_name": "委托检测报告",
+  "report_id": 265,
+  "report_no": "jsdkjfk87878",
+  "report_no_txt": "",
+  "chapters": [
+    {
+      "image": "images/0dce0fb279e7e3f1d0268b1a92ccfb55.jpeg",
+      "name": "CMA资质章",
+      "checked": true,
+      "sId": 1
+    }
+  ],
+  "order_no": "99998797",
+  "sample_names": "我是一个很长条的小麦粉哦，请仔细看看我的名称，在什么地方可能",
+  "company": "上海融氏企业有限公司1",
+  "inspected_company": "",
+  "inspected_type": "",
+  "ins_names": "检测云检测",
+  "trademark_names": "",
+  "model": "",
+  "grade": "2得分点",
+  "factory_name": "归原农业生态发展有限公司",
+  "batch_no": "",
+  "production_date": null,
+  "num": "史蒂芬",
+  "sample_remark": "",
+  "receive_date": "",
+  "test_standard": "",
+  "test_conclusion": "",
+  "report_remark": "",
+  "test_date": "",
+  "report_date": "",
+  "signature": {
+    "approve": "images/9d1bad2e67cc412a7055d33a1e78039c.jpg",
+    "verification": "",
+    "draw": ""
+  },
+  "items": [
+      {
+        "name": "植酸",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "植酸",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "代森锰锌",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "仲丁胺",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "仲丁胺",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "维生素E",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "代森锌",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "硫胺素（维生素B<sub>1</sub>）",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "单甲脒和单甲脒盐酸盐",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      },
+      {
+        "name": "二嗪磷",
+        "demand": "",
+        "actual_value": "",
+        "one_way_determine": ""
+      }
+  ],
+  "notes": [
+    {
+      "remark": ""
+    },
+    {
+      "remark": ""
+    }
+  ]
+}
