@@ -58,18 +58,27 @@ export default () => {
   arr.map((r) => {
     console.log(r.getIn(['c']))
   })
-  var stateV1 = fromJS({
+  var stateV1 = Map({
     users: [
       { name: 'Foo' },
-      { name: 'Bar' }
+      { name: 'Bar' },
+      { name: 'XJOO'}
     ]
   });
-  let hs = stateV1.getIn(['users'])
-  let users = List(hs).push({name: 1111})
-  let stateV2 = stateV1.setIn(['users'], users.toJS())
-  let sv2 = stateV2.getIn(['users'])
-  let sv2m = sv2.slice(0,1)
-  sv2.splice(0, 1)
+  let stateV2 = stateV1.updateIn(['users'],(x, i) => {
+    console.log(x, 'x', i)
+    let n = List(x).toJS()
+    n.push({name: 'xxxx'})
+    return n
+    // x.push({name: 'xxx'})
+    // return x.splice(0, 1)
+  })
+  // let hs = stateV1.getIn(['users'])
+  // let users = List(hs).push({name: 1111})
+  // let stateV2 = stateV1.setIn(['users'], users.toJS())
+  // let sv2 = stateV2.getIn(['users'])
+  // let sv2m = sv2.slice(0,1)
+  // sv2.splice(0, 1)
 
-  console.log(stateV2.getIn(['users']))
+  console.log(stateV2.getIn(['users']), stateV1.getIn(['users']))
 }

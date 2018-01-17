@@ -1,6 +1,6 @@
 <template lang="pug">
   div.frame
-    div.toolbar( contenteditable='true')
+    div.toolbar
       ul.tab-bar
         li( v-for='tool in toolbar',
           @click='active = tool.id', :class="[active == tool.id ? 'active': '']") {{tool.name}}

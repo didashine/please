@@ -9,7 +9,8 @@ export let normalPage = (config, m) => {
     ],
     w: pageConfig.width,
     h: pageConfig.height,
-    operateH: pageConfig.operateHeight
+    operateH: pageConfig.operateHeight,
+    padding: pageConfig.padding
   }
   if(config === undefined&&m === undefined) {
     return normal = {
@@ -17,6 +18,7 @@ export let normalPage = (config, m) => {
       m: [],
       w: pageConfig.width,
       h: pageConfig.height,
+      padding: pageConfig.padding,
       operateH: pageConfig.operateHeight
     }
   }

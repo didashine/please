@@ -1,6 +1,6 @@
 import timeTraveler from '../until/timeTraveler'
 import {newRow, edit, deleted, uStyle} from '../core/edit'
-import {splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable} from "./immutable";
+import {splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
 import {normalBp, normalTb, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode} from "../until/dom";
 import {spliceMap} from '../until/until'
@@ -498,24 +498,32 @@ export default function dataCenter(data, vm) {
       *
       * */
       // 删除掉要合并不包括table的
+      let dataV2 = data
       let addSec = [];
       if(bpI<l-1) {
-        addSec = getProperty(data, `m.${pageI}.m`).splice(bpI+1, l-bpI)
+        let newVersion = supSplice(dataV2, `m.${pageI}.m`, bpI+1, l-bpI)
+        addSec = newVersion['spliceData']
+        dataV2 = newVersion['data']
         // addSec = getProperty(data, `m.${pageI}.m`).slice(bpI+1, l)
         // data = splice(data,`m.${pageI}.m`, bpI+1, l-bpI)
       }
       // 得到table数据
-      let table = getProperty(data, `m.${pageI}.m.${bpI}`)
+      let table = getProperty(dataV2, `m.${pageI}.m.${bpI}`)
       let trNum = table.m.length
+      let tableV2 = supSplice(dataV2, `m.${pageI}.m.${bpI}.m`, trI+1>=trNum? trI: trI+1, trNum- trI)
+      let interceptTrs =  tableV2['spliceData']
+      dataV2 = tableV2['data']
+      if(trNum <=1) {
+        dataV2 = splice(dataV2, `m.${pageI}.m`, bpI, 1)
+      }
       // 截取所有超出的trs
-
-      let interceptTrs = table.m.splice(trI+1>=trNum? trI: trI+1, trNum- trI)
+      // 无关的安全数据
+      // table.m.splice(trI+1>=trNum? trI: trI+1, trNum- trI)
       //let interceptTrs = table.m.slice(trI+1>=trNum? trI: trI+1, trNum)
       // 移除要添加的
-      data = splice(data, `m.${pageI}.m.${bpI}.m`, trI+1>=trNum? trI: trI+1, trNum- trI)
+      // data = splice(data, `m.${pageI}.m.${bpI}.m`, trI+1>=trNum? trI: trI+1, trNum- trI)
       let firstTr = interceptTrs[0]
       firstTr['td'].map((td) => {
-
         let merge = td.merge
         if(merge.isMerge) {
           td.show = true
@@ -523,9 +531,12 @@ export default function dataCenter(data, vm) {
           td.rowspan = merge.rowspan
         }
       })
-      options.intelligentMergeForTable(interceptTrs)
+      let safeMergeData = options.intelligentMergeForTable(interceptTrs)
       //
-      return [{fragmentI: pageI, interceptTrs, type: 'tr_fragment' }, ...addSec]
+      return {
+        data: dataV2,
+        sliceSec: [{fragmentI: pageI, interceptTrs: safeMergeData, type: 'tr_fragment' }, ...addSec]
+      }
     },
     // 错误做法
     intelligentMergeForTable(trs) {
@@ -545,6 +556,7 @@ export default function dataCenter(data, vm) {
           }
         })
       })
+      return trs
     },
     // 错误做法
     autoBeautifyPage: function(down, support, isMerge, doc) {
@@ -565,17 +577,30 @@ export default function dataCenter(data, vm) {
       }
       // 获得当前并且切割当前页 暂时 错误
       let getAddSrcAndSplice = (data, pageI, {bpI, l, trI})=> {
+        // console.log(data.getIn(['m']), 'h是患得患失')
         // 截取table tri存在且不等于-1
         if(trI!==undefined&&trI!==-1) {
-          let addSec = options.intelligentSliceTable(
+          let  sliceTable = options.intelligentSliceTable(
             data,
             pageI,
             {bpI, l, trI}
             )
-          return addSec
+          console.log(sliceTable['data'].getIn(['m']), sliceTable['sliceSec'], 'getAddSrcAndSplice')
+          return {
+            addSec: sliceTable['sliceSec'],
+            data: sliceTable['data']
+          }
         }
         // 暂时 错误
-        return getProperty(data, `m.${pageI}.m`).splice(bpI+1>=l? bpI: bpI+1, l-bpI)
+        let dataV2 = supSplice(data, `m.${pageI}.m`, bpI+1>=l? bpI: bpI+1, l-bpI)
+        // data = dataV2['data']
+        console.log(dataV2['data'].getIn(['m']), '5555')
+        return {
+          addSec: dataV2['spliceData'],
+          data: dataV2['data']
+        }
+       // dataV2['spliceData']
+        // return getProperty(data, `m.${pageI}.m`).splice(bpI+1>=l? bpI: bpI+1, l-bpI)
       }
       // 获取需要向上补全的并且切割当前 暂时 错误
       let getSupplySrcAndSplice = (data, pageI, {bpI}) => {
@@ -606,11 +631,15 @@ export default function dataCenter(data, vm) {
 
             // 合并页 错误
             if(addSec[0].type == 'tr_fragment') {
+              // 当前表格
                 let table = getProperty(data, `m.${support['i']}.m`)
               // 如果表格已被拆分过
                 if(table.length&& table[0].t == 'tb'&& table[0]['fragmentI'] == addSec[0]['fragmentI']) {
                   data = unshift(data, `m.${support['i']}.m.0.m`, ...addSec[0]['interceptTrs'])
-                  options.intelligentMergeForTable(table[0]['m'])
+                  let table = getProperty(data, `m.${support['i']}.m`)
+                  let newTrs = newArray(table[0]['m'])
+                  newTrs = options.intelligentMergeForTable(newTrs)
+                  data = setProperty(data, `m.${support['i']}.m.0.m`, newTrs)
                 }else {
                   data = merge(data, support['i'], [
                     normalTb(addSec[0]['interceptTrs'], addSec[0]['fragmentI']),
@@ -634,10 +663,14 @@ export default function dataCenter(data, vm) {
           // 是否超出
           if(calcOver.over) {
             // 没有多的页就new一页
+            console.log('超出了。。。。')
             if(!hasNext(data, support['i'])) {
+              console.log('超出了。。。。没有下一页')
               data = options.newPage(data, support['i']);
             }
-            let addSec = getAddSrcAndSplice(data, support['i'], calcOver);
+            let getAdd = getAddSrcAndSplice(data, support['i'], calcOver);
+            addSec = getAdd['addSec']
+            data = getAdd['data']
             //
             if(doc) {
               let has = hasCurrEdit(calcOver['bpI'], doc);
@@ -685,6 +718,7 @@ export default function dataCenter(data, vm) {
         // 以下参数不要修改
       )(support, isMerge, doc)
       history.record(data)
+      console.log(data.getIn(['m']), 'dataend')
       return {
         data, doNoThing, uEditPlace
       }

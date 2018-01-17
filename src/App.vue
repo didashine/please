@@ -173,7 +173,9 @@
             true, doc)
           if(!beautifyPage.doNoThing) {
             data = beautifyPage.data
+            console.log('beautifydata', data.getIn(['m']))
             trigger('save', data)
+            dc.u(data)
             dc.asyncDom(function() {
               if(beautifyPage.uEditPlace.is) {
                 let node = document.getElementsByClassName(beautifyPage.uEditPlace.class)[0]
@@ -487,14 +489,18 @@
                     data-type='EDIT_PAGE'
                     style={{
                       width: page.w+ 'px',
-                      height: page.h+ 'px'
+                      height: page.h+ 'px',
+                      padding: page.padding
                     }}
                   >
-                    <div class="auto-h-r">
-                      <div class="bugle lt" contentEditable='false'></div>
-                      <div class="bugle rt" contentEditable='false'></div>
-                      <div class="bugle lb" contentEditable='false'></div>
-                      <div class="bugle rb" contentEditable='false'></div>
+                    <div class="auto-h-r" style={{height: page.operateH+ 'px'}}>
+                      <div contentEditable='false'>
+                        <div class="bugle lt" contentEditable='false'></div>
+                        <div class="bugle rt" contentEditable='false'></div>
+                        <div class="bugle lb" contentEditable='false'></div>
+                        <div class="bugle rb" contentEditable='false'></div>
+                      </div>
+
                       {
                         this._l(page.m, (pm, pmi) => {
                           return render.renderByType.call(
@@ -539,14 +545,17 @@
   }
   .word-wrap {
     position: relative;
+    background: rgba(234, 234, 234, 0.8)
   }
   .jfs-word {
+    padding-top: 20px;
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
   }
   .page {
+    background: #fff;
     box-sizing: border-box;
   }
   .bp_txt {
@@ -597,13 +606,12 @@
   }
   .page {
     margin: 0 auto;
-    padding: 40px 80px;
     box-shadow: 0px -1px 2px #ccc;
     border: 1px solid #ccc;
+    margin-bottom: 20px;
   }
   .auto-h-r {
     position: relative;
-    height: 1003px;
   }
   .bugle {
     position: absolute;

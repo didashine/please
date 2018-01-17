@@ -7,16 +7,18 @@ export let NORMAL_CONFIG = {
     space: 1.2,
   },
   bpTxt: {
-    fontSize: 48,
+    fontSize: 9,
     color: '#000',
     fontFamily: 2,
     textDecoration: 'none'
   }
 }
 export let pageConfig = {
-  operateHeight: 1003,
+  operateHeight: 923,
   height: 1083,
-  width: 792
+  width: 792,
+  padding: '80px 80px'
+
 }
 export let headingsConfig = [
     {

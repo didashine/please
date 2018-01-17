@@ -19,29 +19,55 @@ export const getProperty = function (obj, name) {
   return getIn(obj, typeof name === 'string'? name.split('.'): name)
 }
 export const push = function(obj, name, ...value) {
-  let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
-  let newArr = List(o).push(...value)
-  return obj.setIn(typeof name === 'string'? name.split('.'): name, newArr.toJS())
+  // let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
+  // o.push(...value)
+  // return obj.setIn(typeof name === 'string'? name.split('.'): name, o)
+  name = typeof name === 'string'? name.split('.'): name
+  return obj.updateIn(name, (x) => {
+    let n = List(x).toJS()
+    n.push(...value)
+    return n
+  })
 }
 export const unshift = function(obj, name, ...value) {
-  let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
-  // console.log(value, 'value', o, 'shift', name)
-  let newArr = List(o).unshift(...value)
-  return obj.setIn(typeof name === 'string'? name.split('.'): name, newArr.toJS())
+  // let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
+  // // console.log(value, 'value', o, 'shift', name)
+  // let newArr = newArray(o)
+  // newArr.unshift(...value)
+  // o.unshift(...value)
+  name = typeof name === 'string'? name.split('.'): name
+  console.log(...value)
+  return obj.updateIn(name, (x) => {
+    let n = List(x).toJS()
+    n.unshift(...value)
+    return n
+  })
+  // return obj.setIn(typeof name === 'string'? name.split('.'): name, newArr)
 }
 export const splice = function(obj, name, i, num, data) {
-  let o = obj.getIn(typeof name === 'string'? name.split('.'): name)
-  let newArr = data === undefined? List(o).splice(i, num): List(o).splice(i, num, data)
-  return obj.setIn(typeof name === 'string'? name.split('.'): name, newArr.toJS())
+  // let o = obj.getIn(typeof name === 'string'? name.split('.'): name)
+  //
+  // data === undefined ? o.splice(i, num): o.splice(i, num, data)
+  // return obj.setIn(typeof name === 'string'? name.split('.'): name, o)
+  name = typeof name === 'string'? name.split('.'): name
+  return obj.updateIn(name, (x) => {
+    let n = List(x).toJS()
+    data === undefined ? n.splice(i, num): n.splice(i, num, data)
+    return n
+  })
   // obj.splice(['0', ...name.split('.')], value)
 }
 export const supSplice = function (obj, name, i, num, data) {
-  let o = obj.getIn(typeof name === 'string'? name.split('.'): name)
-  let splice = data === undefined ? o.splice(i, num): o.splice(i, num, data)
-  let newData = obj.setIn(typeof name === 'string'? name.split('.'): name, o)
+  name = typeof name === 'string'? name.split('.'): name
+  let spliceData;
+  let objV2 = obj.updateIn(name, (x) => {
+    let n = List(x).toJS()
+    spliceData = data === undefined ? n.splice(i, num): n.splice(i, num, data)
+    return n
+  })
   return {
-    newData,
-    splice
+    data: objV2,
+    spliceData
   }
 }
 export const sliceMutable = function(obj ,name, begin, end) {
