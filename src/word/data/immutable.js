@@ -31,12 +31,10 @@ export const push = function(obj, name, ...value) {
 }
 export const unshift = function(obj, name, ...value) {
   // let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
-  // // console.log(value, 'value', o, 'shift', name)
   // let newArr = newArray(o)
   // newArr.unshift(...value)
   // o.unshift(...value)
   name = typeof name === 'string'? name.split('.'): name
-  console.log(...value)
   return obj.updateIn(name, (x) => {
     let n = List(x).toJS()
     n.unshift(...value)

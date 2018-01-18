@@ -133,7 +133,7 @@ let operation = function() {
 
   let getTr = function (tr) {
     let parent = tr.parentNode
-    while(parent.tagName !== 'TR'&&parent.dataset.id==undefined) {
+    while(parent.tagName !== 'TR'&&parent.dataset.index==undefined) {
       parent = parent.parentNode
     }
     return parent
@@ -560,10 +560,10 @@ let operation = function() {
       if(api.getStatus().inDrag) return;
       let vertical = this.$refs.vertical
       let horizontal = this.$refs.horizontal
-      if(e.target.tagName == 'TD'&&e.target.dataset.id!==undefined) {
+      if(e.target.tagName == 'TD'&&e.target.dataset.index!==undefined) {
         let el = e.target;let index = 0;let boundObj = boundaryObj.getWirePos(e, el);
         if(boundObj.type == 'left' || boundObj.type == 'right') {
-          index = scope.tdi == undefined ? el.dataset.id.slice(-1): scope.tdi
+          index = scope.tdi == undefined ? el.dataset.index.slice(-1): scope.tdi
           // 左侧边缘时
           if(boundObj.type == 'left') {
             if(index>0) {
@@ -580,7 +580,7 @@ let operation = function() {
         }
         if(boundObj.type == 'top' || boundObj.type == 'bottom') {
           el = getTr(e.target)
-          index = scope.tri == undefined ? el.dataset.id: scope.tri
+          index = scope.tri == undefined ? el.dataset.index: scope.tri
           boundObj = boundaryObj.getWirePos(e, el)
           // 上边缘时
           if(boundObj.type == 'top') {
@@ -741,7 +741,8 @@ export default {
             this._l(this.renderData.m, (tr, tri) => {
               return (
                 <tr
-                  data-id={`:${tri}`}
+                  data-index={`:${tri}`}
+                  data-id={`${this.dataId}.:m.:${tri}`}
                   onMousemove={(e) => {
                     this.trOnMouseMove(e, {tri})
                   }}

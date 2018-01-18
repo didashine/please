@@ -84,6 +84,7 @@
           let isHTMLElement = (e) => {
             return (e instanceof HTMLElement)
           }
+          // 更新工具栏
           let updateToolbar = (name, bI) => {
             let bp = dc.getData(this.worder, name)
             let conf = {
@@ -146,7 +147,7 @@
         // 设置word可视高度
         // 设置word高度部分
         on(window, 'resize', () => {
-          setWordH()
+          this.setWordH()
         })
         // .......
         on('save', (data) => {
@@ -156,8 +157,19 @@
           if(hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
             dc.u(dc.setBpH(data, node, path))
           }
+          // 存在于td里面的td
           if(!hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
-            dc.u(dc.setBpH(data, node, path, true))
+            let getTr = (node) => {
+              let parent = node.parentNode
+              while(parent.tagName!=='TR') {
+                parent = parent.parentNode
+              }
+              return parent
+            }
+            let tr = getTr(node)
+            let trPath = tr.dataset.id.replace(/:/g, '')
+            data = dc.setBpH(data, node, path, true)
+            dc.u(dc.setTr(data, tr, trPath))
           }
           if(hasClass(node, 'word_bp')&&hasClass(node, 'table')) {
             dc.u(dc.setTableH(data, node, path))
@@ -257,7 +269,9 @@
           // console.log('wordInput')
           // e.preventDefault()
           updateDoc(e)
-
+          console.log(
+            doc.range.r.getBoundingClientRect(),
+            'getBound')
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'originWriting') {
             doc.setSpellStatus('typeWriting')
@@ -365,13 +379,15 @@
             // 需要删除行
             if(doc.range.startOffset == 0&&doc.range.editNodeRelativeI<1) {
               dc.u(n.data)
+
               dc.asyncDom(() => {
                 let txtNode = n.prevTextNode
-                r.setStart(txtNode, n.prevEndOffset)
-                r.setEnd(txtNode, n.prevEndOffset)
+                r.setStart(txtNode, n.prevEndOffset+1)
+                r.setEnd(txtNode, n.prevEndOffset+1)
                 trigger('beautifyPage', this.worder, doc, false)
               })
             }
+
             trigger('save', this.worder)
             return
           }else {
@@ -424,6 +440,10 @@
             let r = ranges() // range对象
             r.setStart(txtNode, 1)
             r.setEnd(txtNode, 1)
+            let selection = window.getSelection()
+            selection.removeAllRanges()
+            // 插入新的光标对象
+            selection.addRange(r)
           })
         })
         on('toolbar.select.bp', (value, type) => {
@@ -489,7 +509,6 @@
                     data-type='EDIT_PAGE'
                     style={{
                       width: page.w+ 'px',
-                      height: page.h+ 'px',
                       padding: page.padding
                     }}
                   >
@@ -609,29 +628,31 @@
     box-shadow: 0px -1px 2px #ccc;
     border: 1px solid #ccc;
     margin-bottom: 20px;
+    overflow: hidden;
   }
   .auto-h-r {
     position: relative;
   }
   .bugle {
     position: absolute;
-    width: 16px;
+    width: 18px;
     height: 16px;
-    border-right: 2px solid lightsteelblue;
-    border-bottom: 2px solid lightsteelblue;
+    border-right: 1px solid rgb(191,191,191);
+    border-bottom: 1px solid rgb(191,191,191);
+    border-radius: 2px;
   }
   .bugle.lt {
-    left: -16px;
+    left: -18px;
     top: -16px;
   }
   .bugle.rt {
     top:-16px;
-    right: -16px;
+    right: -18px;
     transform: rotateZ(90deg);
   }
   .bugle.lb {
     bottom: -16px;
-    left: -16px;
+    left: -18px;
     transform: rotateZ(-90deg);
   }
   .bugle.rb {

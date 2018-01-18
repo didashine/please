@@ -5,6 +5,7 @@ import {normalBp, normalTb, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode} from "../until/dom";
 import {spliceMap} from '../until/until'
 import {NORMAL_CONFIG} from "../config/baseConfig";
+let t = true
 let isSpaceTxt=(txt) => {
   let spaceReg = /^\u00A0$/
   return txt.match(spaceReg)||txt.trim() === ''
@@ -65,7 +66,6 @@ export default function dataCenter(data, vm) {
     // 居中
     textCenter(doc, data, value) {
       let bp = doc.place.bpAbsolutePath
-      // console.log(bp, '......')
       data = setProperty(data, bp+'.textAlign', value)
       history.record(data)
       return data
@@ -82,7 +82,6 @@ export default function dataCenter(data, vm) {
       let gen = [1, 0, 1]
       // alert(JSON.stringify(currentBp))
       if((update.retainsTxt.match(spaceReg)&&update.retainsTxt.length<2)||update.retainsTxt.trim() === '') {
-        //console.log(update.retainsTxt, 'update.retainsTxt')
         // 删除当前
         currentBp.splice(currentEditI, 1)
         // 生成全新
@@ -109,8 +108,6 @@ export default function dataCenter(data, vm) {
         // 补充
 
       }
-     //  console.log(currentBp, 'curren5')
-      // console.log(currentBp, 'curren5')
       data = setProperty(data, update.bpAbsolutePath+'.heads', false)
       data = setProperty(data, update.bpAbsolutePath+'.m', currentBp)
       let currAbPath = update.editNodeAbsolutePath.split('.').slice(0, -1)
@@ -121,7 +118,6 @@ export default function dataCenter(data, vm) {
     newTable(selTable, doc, data, conf) {
 
       let path = doc.place.bpAbsolutePath.split('.').slice(0, -1)
-      // console.log(doc.place.bpRelativeI+1, path, normalTb(...selTable, conf))
       data = splice(data, path, doc.place.bpRelativeI+1, 0, normalTb(...selTable, conf))
       history.record(data)
       return {
@@ -143,7 +139,6 @@ export default function dataCenter(data, vm) {
           return true
         }
       })
-      // console.log(sliceIntercept, 'sliceIntercep')
       // 设置当前行保留下来的数据
       let sliceRetains = sliceMutable(data, update.bpAbsolutePath+'.m', 0, update.editNodeRelativeI+1)
       sliceRetains[sliceRetains.length-1].t_txt = update.retainsTxt
@@ -156,12 +151,14 @@ export default function dataCenter(data, vm) {
       history.record(data)
       return { data, newElClass:  [...path, update.bpRelativeI+1].join('.:'), newBpPath: [...path, update.bpRelativeI+1].join('.')}
     },
+    //
     deleted(el, doc, data) {
       let update = deleted(el, doc)
       let switchSpan = false
       let prevBp
       let prevTextNode
       let prevEndOffset
+
       //
       data= setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.editTxt)
       // 第一种情况下
@@ -228,7 +225,6 @@ export default function dataCenter(data, vm) {
 
     },
     removeRow(el, doc, data, update) {
-
       let path = update.bpAbsolutePath.split('.')
       let bpRelativeI =  update.bpRelativeI
       let prevBp;
@@ -242,19 +238,26 @@ export default function dataCenter(data, vm) {
         // 截取留下来的所有文本
         let sliceInterceptTxt = sliceMutable(data, update.bpAbsolutePath+'.m', update.editNodeRelativeI , update.nodeNum)
         sliceInterceptTxt[0].t_txt = update.interceptTxt
+        // 删除空的文本
         spliceMap(sliceInterceptTxt, (b, i) => {
           if(isSpaceTxt(b.t_txt)) {
             sliceInterceptTxt.splice(i, 1)
             return true
           }
         })
-        let prevBpPath = [...path.slice(0, -1), bpRelativeI-1, 'm']
-        let prevBpData = getProperty(data, prevBpPath)
-        if(prevBpData.length === 1&&prevBpData[0].t_txt.match(spaceReg)) {
-          data = setProperty(data, prevBpPath, [])
+        if(!doc.place.inTable&&doc.place.bpRelativeI === 0) {
+
+        }else {
+          let prevBpPath = [...path.slice(0, -1), bpRelativeI-1, 'm']
+
+          let prevBpData = getProperty(data, prevBpPath)
+          if(prevBpData.length === 1&&prevBpData[0].t_txt.match(spaceReg)) {
+            data = setProperty(data, prevBpPath, [])
+          }
+          data = push(data, prevBpPath, ...sliceInterceptTxt)
+          data = splice(data, path.slice(0, -1), bpRelativeI, 1)
         }
-        data = push(data, prevBpPath, ...sliceInterceptTxt)
-        data = splice(data, path.slice(0, -1), bpRelativeI, 1)
+
       }
       // 切割路径
       path.splice(path.length-1, 1, bpRelativeI-1)
@@ -291,34 +294,54 @@ export default function dataCenter(data, vm) {
     setTableH(worder, el, path, bp) {
       let trDom = el.getElementsByTagName('tr')
       let trData = bp? bp.m: getProperty(worder, path).m
-      console.log(trDom, 'trDom', trData, path)
       trData.map((tr, tri) => {
         worder = setProperty(
           worder,
           `${path}.m.${tri}.h`,
           trDom.item(tri).clientHeight)
+        tr['td'].map((td, tdi) => {
+          if(td.show) {
+            td['t_bp'].map((tbp, tbpi) => {
+              if(!tbpi['h']) {
+                let klass = `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`.replace(/\./g, '.:')+ '$bp'
+                worder = options.setBpH(
+                  worder,
+                  document.getElementsByClassName(klass)[0],
+                  `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`,
+                  true)
+              }
+            })
+          }
+        })
       })
       return worder
     },
-    setBpH(worder, el, name, offsetH = false) {
-      let setOffsetApartWord = (el) => {
-        let pEl = el.offsetParent
-        if(hasClass(pEl, 'auto-h-r')) {
-          return el.offsetTop
-        }
-
-        let offsetT = el.offsetTop
-        while(el = el.offsetParent) {
-          if(hasClass(el, 'auto-h-r')) {
-            return offsetT
-          }
-          offsetT+=el.offsetTop
-        }
+    setTr(worder, el, name) {
+      let h = el.clientHeight
+      worder = setProperty(worder, name+'.h', h)
+      return worder
+    },
+    setOffsetApartWord (el) {
+      let pEl = el.offsetParent
+      if(hasClass(pEl, 'auto-h-r')) {
+        return el.offsetTop
       }
-      let h = !offsetH? el.clientHeight: setOffsetApartWord(el)+el.offsetHeight
+      let offsetT = el.offsetTop
+      while(el = el.offsetParent) {
+        if(hasClass(el, 'auto-h-r')) {
+          return offsetT
+        }
+        offsetT+=el.offsetTop
+      }
+      // return offsetT
+    },
+    setBpH(worder, el, name, offsetH = false) {
+
+      let h = !offsetH? el.clientHeight: options.setOffsetApartWord(el)+el.offsetHeight
       worder = setProperty(worder, name+ '.h', h)
       return worder
     },
+
     setH(worder) {
       let pages = getProperty(worder, ['m'])
       pages.map((page, pi) => {
@@ -353,16 +376,13 @@ export default function dataCenter(data, vm) {
     switchPage() {
     },
     getH(el) {
-
       return el.clientHeight
     },
     returnH(bp, path, i) {
       let bpH = bp.h
       if(bp.h == 0) {
         let klass = (path+'.'+i).replace(/\./g, '.:')+'$bp'
-
         let el = document.getElementsByClassName(klass)[0]
-        console.log(bp, path, i, klass, el)
         bpH = options.getH(el)
       }
       return (bp.h ? bp.h: bpH)
@@ -379,9 +399,7 @@ export default function dataCenter(data, vm) {
           h+=options.returnH(bp, path, i)
         }
       }
-
       let delL = maxH-h
-      console.log(delL, 'delL', h, page, '..........')
       if(delL) {
         let h = 0
         for(let i = 0;i<nextPage.length; i++) {
@@ -390,7 +408,6 @@ export default function dataCenter(data, vm) {
             h+=options.returnH(bp, path, i)
           }
           if(h>delL) {
-            console.log(i, '....yyy')
             // 添加部分
             return {
               supply: true,
@@ -429,8 +446,21 @@ export default function dataCenter(data, vm) {
           for(let n = 0;n<trs.length;n++) {
             let tr = trs[n]
             h+=tr.h
-            // console.log(h, 'hhhh')
             if(h>maxH) {
+              // tr['td']
+              tr['td'].map((td, tdi) => {
+                if(td.show) {
+                  td['t_bp'].map((bp, bpi) => {
+                    // let v = `${path}.${i}.m.${n}.td.${tdi}.t_bp.${bpi}`
+                    // let klass = v.replace(/\./g, '.:')
+                    // let offsetH = options.setOffsetApartWord(document.getElementsByClassName(klass)[0])
+                    // console.log(document.getElementsByClassName(klass))
+                    if(bp.h>maxH) {
+
+                    }
+                  })
+                }
+              })
               let trI = n-1 <= 0 ? 0: n-1
               return {
                 l: page.length,
@@ -560,7 +590,6 @@ export default function dataCenter(data, vm) {
     },
     // 错误做法
     autoBeautifyPage: function(down, support, isMerge, doc) {
-      // console.log(this.worder)
       let data = this.worder
       // 是否有下一页
       let hasNext = (data, i)=> {
@@ -577,7 +606,6 @@ export default function dataCenter(data, vm) {
       }
       // 获得当前并且切割当前页 暂时 错误
       let getAddSrcAndSplice = (data, pageI, {bpI, l, trI})=> {
-        // console.log(data.getIn(['m']), 'h是患得患失')
         // 截取table tri存在且不等于-1
         if(trI!==undefined&&trI!==-1) {
           let  sliceTable = options.intelligentSliceTable(
@@ -585,7 +613,6 @@ export default function dataCenter(data, vm) {
             pageI,
             {bpI, l, trI}
             )
-          console.log(sliceTable['data'].getIn(['m']), sliceTable['sliceSec'], 'getAddSrcAndSplice')
           return {
             addSec: sliceTable['sliceSec'],
             data: sliceTable['data']
@@ -594,7 +621,6 @@ export default function dataCenter(data, vm) {
         // 暂时 错误
         let dataV2 = supSplice(data, `m.${pageI}.m`, bpI+1>=l? bpI: bpI+1, l-bpI)
         // data = dataV2['data']
-        console.log(dataV2['data'].getIn(['m']), '5555')
         return {
           addSec: dataV2['spliceData'],
           data: dataV2['data']
@@ -604,12 +630,17 @@ export default function dataCenter(data, vm) {
       }
       // 获取需要向上补全的并且切割当前 暂时 错误
       let getSupplySrcAndSplice = (data, pageI, {bpI}) => {
-        let sec= getProperty(data, `m.${pageI}.m`).splice(0, bpI+1)
-        console.log(getProperty(data, `m.${pageI}.m`), 'getProperty(data, `m.${pageI}.m`)')
-        if(getProperty(data, `m.${pageI}.m`).length == 0) {
-          getProperty(data, `m`).splice(pageI, 1)
+        // let sec= getProperty(data, `m.${pageI}.m`).splice(0, bpI+1)
+        let sectionV2 = supSplice(data, `m.${pageI}.m`, 0, bpI+1)
+        let dataV2 = sectionV2['data']
+        if(getProperty(dataV2, `m.${pageI}.m`).length == 0) {
+          let sectionV3 = supSplice(data, `m`, pageI, 1)
+          dataV2 = sectionV3['data']
         }
-        return sec
+        return {
+          supplySec: sectionV2['spliceData'],
+          data: dataV2
+        }
       }
       // 是否处在当前编辑的
       let hasCurrEdit = (bpI, doc) => {
@@ -623,12 +654,10 @@ export default function dataCenter(data, vm) {
       let beautifyPage = new Function();
       (beautifyPage= down ?
         function (support, isMerge, doc) {
-
           // 超出部分
           let addSec = support['addSec'];
           // 没有合并先合并
           if(!isMerge) {
-
             // 合并页 错误
             if(addSec[0].type == 'tr_fragment') {
               // 当前表格
@@ -663,9 +692,7 @@ export default function dataCenter(data, vm) {
           // 是否超出
           if(calcOver.over) {
             // 没有多的页就new一页
-            console.log('超出了。。。。')
             if(!hasNext(data, support['i'])) {
-              console.log('超出了。。。。没有下一页')
               data = options.newPage(data, support['i']);
             }
             let getAdd = getAddSrcAndSplice(data, support['i'], calcOver);
@@ -690,10 +717,10 @@ export default function dataCenter(data, vm) {
             return void 0;
           }
         }:
-        function(support) {
+        function(support, isMerge, doc) {
+          console.log(doc, 'doc..')
           // 判断是否有下一页
           if(!hasNext(data, support['i'])) {
-            doNoThing = true
             return void 0;
           }else {
             let currI = support['i']
@@ -704,13 +731,12 @@ export default function dataCenter(data, vm) {
               getProperty(data, `m.${nextI}`)
             )
             if(calcSupply.supply) {
-              let supplySec = getSupplySrcAndSplice(data, nextI, calcSupply)
-              data = merge(data, currI, supplySec, false)
+              let supply = getSupplySrcAndSplice(data, nextI, calcSupply)
+              data = merge(supply['data'], currI, supply['supplySec'], false)
               beautifyPage({
                 i: nextI
               })
             }else {
-              doNoThing = true;
               return void 0;
             }
           }
@@ -718,7 +744,6 @@ export default function dataCenter(data, vm) {
         // 以下参数不要修改
       )(support, isMerge, doc)
       history.record(data)
-      console.log(data.getIn(['m']), 'dataend')
       return {
         data, doNoThing, uEditPlace
       }
@@ -727,7 +752,14 @@ export default function dataCenter(data, vm) {
       return push(data, 'm', normalPage())
     },
     record: history.record.bind(history),
-    Undo: history.Undo.bind(history),
+    //Undo: history.Undo.bind(history),
+    Undo(){
+      // t = false
+      history.Undo()
+      // options.asyncDom(() => {
+      //   t = true
+      // })
+    },
     Redo: history.Redo.bind(history),
     history: history.history.bind(history)
   }

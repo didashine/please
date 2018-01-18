@@ -13,6 +13,7 @@ function timeTraveler(size=100) {
   let version = 0
   let api = {
     log(commit) {
+      return;
       console.group("%c%s", "color: #00CD00", "记录日志");
       console.info(
         "%c%s",

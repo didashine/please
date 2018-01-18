@@ -91,6 +91,9 @@
   .frame
     width 100%
     padding-top 20px
+    box-shadow 0 2px 4px #ccc
+    z-index 30
+    position relative
     .toolbar
       position relative
       padding-top 10px

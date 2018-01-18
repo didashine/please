@@ -11,9 +11,6 @@ export function range() {
 }
 
 // 是否要换行
-export let isOverWidth = (el) => {
-
-}
 export let trys = (r, el) => {
   // console.log(el, 'idel')
   let id = el.dataset.id
