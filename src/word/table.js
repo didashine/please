@@ -241,7 +241,7 @@ let operation = function() {
     // 合并单元格
     _mergeCells() {
       let word = this.$refs.tableBoundary
-      let path = word.dataset.id.replace(/:/g, '')
+      let path = word.dataset.id
       let data = this.app.worder
       let renderData = this.renderData
       let cellMatrix = api.getStatus()['cellMatrix']
@@ -312,7 +312,7 @@ let operation = function() {
     _cancelSelect() {
       let data =this.renderData.m
       let tableRenderData = this.app.worder
-      let dataId = replace(this.dataId)
+      let dataId = this.dataId
       data.map((tr, index) => {
         tr.td.map((td, i) => {
           tableRenderData = setProperty(tableRenderData, `${dataId}.m.${index}.td.${i}.t_s`, false)
@@ -341,7 +341,7 @@ let operation = function() {
             rightToC: rect.left+ td.clientWidth,
             bottomToC: rect.top+ td.clientHeight,
             el: td,
-            proto: td.dataset.id.replace(/:/g, '')
+            proto: td.dataset.id
           }
         }
         let tds = table.querySelectorAll('td[data-id]')
@@ -521,7 +521,6 @@ let operation = function() {
     cellClick: function (e, {proto, tri, tdi}) {
       if(1) return; // 暂时不用
       let data = this.tableRenderData.m
-      proto = proto.replace(/:/g, '')
       this.$contextMenu.hide()
       if(api.getStatus()['down']) {
         let el = e.target
@@ -742,7 +741,7 @@ export default {
               return (
                 <tr
                   data-index={`:${tri}`}
-                  data-id={`${this.dataId}.:m.:${tri}`}
+                  data-id={`${this.dataId}.m.${tri}`}
                   onMousemove={(e) => {
                     this.trOnMouseMove(e, {tri})
                   }}
@@ -759,7 +758,7 @@ export default {
                             style={{height: td.t_h+ 'px', width: td.t_w-3+ 'px'}}
                               colspan={td.colspan}
                               rowspan={td.rowspan}
-                              data-id={`${this.dataId}.:m.:${tri}.:td.:${i}`}
+                              data-id={`${this.dataId}.m.${tri}.td.${i}`}
                               data-key={td.i}
                               ref={i}
 
@@ -769,7 +768,6 @@ export default {
                               style={{width: td.t_w-3+ 'px'}}
                               contentEditable={true}
                               onClick={(e) => {
-                                // this.cellClick(e, {proto: `:${tri}.:t.:${i}` ,tri, tdi: i})
                               }}
                               onInput={(e) => {
 
@@ -778,7 +776,7 @@ export default {
                               {
                                 this._l(td['t_bp'], (bp, bpi)=> {
                                   return (
-                                    render.renderByType.call(this.$parent, h, bp.t, bp, `${this.dataId}.:m.:${tri}.:td.:${i}.:t_bp.:${bpi}`, bpi, true)
+                                    render.renderByType.call(this.$parent, h, bp.t, bp, `${this.dataId}.m.${tri}.td.${i}.t_bp.${bpi}`, bpi, true)
                                   )
                                 })
                               }

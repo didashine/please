@@ -34,7 +34,7 @@
   let fillWordToPit = () => {
     let NORMAL_CONFIG = normalConfig
     // 文档编辑
-    let doc = new Doc();
+    let doc;
     // 事件管理
     let eventBind;
     // 数据中枢
@@ -56,14 +56,24 @@
         let offsetT = getOffset(wordWrap, 'top')
         wordWrap.style.height = documentH - offsetT+ 'px'
       },
+      updateToolbar (name, bI) {
+        let bp = dc.getData(this.worder, name)
+//        let conf = {
+//          bpTxt: {...bp['m'][bI]['s']},
+//          bp: {...bp}
+//        }
+//        let toolBar = this.$refs['toolBar']
+//        toolBar.setValue(conf)
+      },
       // word初始化方法
       wordInit() {
         let worder = getStore('worderData') || {m: [normalPage(normalConfig)]}
         let data = Map(worder)
        //  this.worder = data
-        dc = dataCenter(data, this)
-        dc.u(data)
+        doc= new Doc(this)
         eventBind = bind(this, doc)
+        dc= dataCenter(data, this, eventBind)
+        dc.u(data, '初始化')
       },
       // word绑定方法
       bind: function() {
@@ -75,7 +85,8 @@
         let trigger = eventBind.trigger
         // 渲染完后设置高度
         this.$nextTick(() => {
-          dc.setH(this.worder)
+          dc.commit('setH', {data: this.worder})
+          // dc.setH(this.worder)
         })
         this.setWordH()
         // doc更新方法
@@ -138,11 +149,12 @@
         }
         on('command+z', debounce((e) => {
          // this.worder = dc.Undo()
-          dc.u(dc.Undo())
+          let d = dc.Undo()
+          dc.u(d, '撤回')
         }, 10, true))
         on('command+y', debounce((e) => {
          // this.worder = dc.Redo()
-          dc.u(dc.Redo())
+          dc.u(dc.Redo(), '重做')
         }, 10, true))
         // 设置word可视高度
         // 设置word高度部分
@@ -155,7 +167,11 @@
         })
         on('setH', (data, {node, path}) => {
           if(hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
-            dc.u(dc.setBpH(data, node, path))
+            dc.commit('setBpH', {
+              data,
+              el: node,
+              name: path
+            })
           }
           // 存在于td里面的td
           if(!hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
@@ -167,41 +183,38 @@
               return parent
             }
             let tr = getTr(node)
-            let trPath = tr.dataset.id.replace(/:/g, '')
-            data = dc.setBpH(data, node, path, true)
-            dc.u(dc.setTr(data, tr, trPath))
+            let trPath = tr.dataset.id
+            data = dc['setBpH']({
+              data,
+              el: node,
+              name: path,
+              offsetH: true
+            })
+            dc.commit('setTr', {
+              data,
+              el: tr,
+              name: trPath
+            })
           }
           if(hasClass(node, 'word_bp')&&hasClass(node, 'table')) {
-            dc.u(dc.setTableH(data, node, path))
+            dc.commit('setTableH', {data, el:node, path})
           }
         })
         on('beautifyPage', function(data, doc, down = true) {
           let docPath = parseInt(doc.place.docPath)
-          let beautifyPage = dc.autoBeautifyPage.call(this,
-            down,
+          dc.commit('autoBeautifyPage',
             {
-              i: docPath
-            },
-            true, doc)
-          if(!beautifyPage.doNoThing) {
-            data = beautifyPage.data
-            console.log('beautifydata', data.getIn(['m']))
-            trigger('save', data)
-            dc.u(data)
-            dc.asyncDom(function() {
-              if(beautifyPage.uEditPlace.is) {
-                let node = document.getElementsByClassName(beautifyPage.uEditPlace.class)[0]
-                let txtNode = getTextNode(node)
-                let r = ranges()
-                r.setStart(txtNode, 0)
-                r.setEnd(txtNode, 0)
-                let selection = window.getSelection()
-                selection.removeAllRanges()
-                // 插入新的光标对象
-                selection.addRange(r)
-              }
-            })
-          }
+              down,
+              support: {i: docPath},
+              isMerge: true,
+              doc
+            }).nextTick((beautifyPage) => {
+            if(beautifyPage.uEditPlace.is) {
+              let node = document.getElementsByClassName(beautifyPage.uEditPlace.class)[0]
+              let txtNode = getTextNode(node)
+              doc.rangeSet(txtNode, 0, 0, true)
+            }
+          })
         })
         // ---------------------
         // 全局click事件
@@ -266,12 +279,10 @@
         })
         // 全局编辑输入事件
         on(word, 'input', debounce((e) => {
+          // console.log('hhhhh')
           // console.log('wordInput')
           // e.preventDefault()
-          updateDoc(e)
-          console.log(
-            doc.range.r.getBoundingClientRect(),
-            'getBound')
+          doc.updateDoc(e)
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'originWriting') {
             doc.setSpellStatus('typeWriting')
@@ -284,50 +295,55 @@
           if(doc.spellStatus === 'typeWritingEnd') {
             doc.setSpellStatus('originWriting')
           }
-          let n = dc.edit(e, doc, this.worder)
-          let bpNode = n.bpNode
+          let bpNode = doc.place.bpNode
           // console.log(bpNode.parentNode.parentNode.offsetWidth, bpNode.scrollWidth)
           if(bpNode.parentNode.parentNode.offsetWidth === bpNode.scrollWidth) {
             // trigger('enter.down', e)
            //  return
           }
-         //  this.worder = n.data
-          dc.u(n.data)
-          trigger('save', this.worder)
-          dc.asyncDom(function(){
-            // let inp = n.bpNode.parentNode.parentNode
-           // console.log(inp.scrollWidth, n.bpNode.offsetWidth)
-            let txtNode = getTextNode(n.editNode)
-            let r = ranges()
-            r.setStart(txtNode, n.startOffset)
-            r.setEnd(txtNode, n.startOffset)
+          dc.commit('edit', {
+            e,
+            doc,
+            data: this.worder
+          }).nextTick((n) => {
+            let txtNode = getTextNode(doc.range.editNode)
+            doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
             trigger('setH', this.worder, {
-              node: n.bpNode.parentNode.parentNode,
-              path: n.bpAbsolutePath
+              node: bpNode.parentNode.parentNode,
+              path: doc.place.bpAbsolutePath
             })
             trigger('beautifyPage', this.worder, doc)
           })
+
         }, 80, true)
         )
         // enter按下换行
         on('enter.down', (e) => {
           e.preventDefault()
-          updateDoc(e)
-          let n = dc.newRow(e.target, doc, this.worder, NORMAL_CONFIG)
+          doc.updateDoc(e)
+          dc.commit('newRow',
+            {
+              el: e.target,
+              doc,
+              data: this.worder,
+              conf: NORMAL_CONFIG
+            }).nextTick((n) => {
+              if(n['data']) {
+                let txtBp = document.getElementsByClassName(n.nextBpPath)[0];
+                let node = txtBp.childNodes[0]
+                doc.rangeSet(node,0, 0)
+                doc.updateDoc(txtBp)
+                trigger('setH', this.worder, {node: txtBp.parentNode.parentNode, path: n.nextBpPath})
+                trigger('beautifyPage', this.worder, doc)
+              }
+            })
+          // let n = dc.newRow(e.target, doc, this.worder, NORMAL_CONFIG)
          //  this.worder = n.data
-          dc.u(n.data)
-          trigger('save', this.worder)
-          dc.asyncDom(function(){
-            let txtBp = document.getElementsByClassName(n.newElClass)[0]
-            let node = txtBp.childNodes[0]
-            let txtNode = getTextNode(node)
-            let r = ranges()
-            r.setStart(txtNode, 0)
-            r.setEnd(txtNode, 0)
-            updateDoc(txtBp)
-            trigger('setH', this.worder, {node: txtBp.parentNode.parentNode, path: n.newBpPath})
-            trigger('beautifyPage', this.worder, doc)
-          })
+//          dc.u(n.data)
+//          trigger('save', this.worder)
+//          dc.asyncDom(function(){
+//
+//          })
         })
         // 删除文字
         // 设立一个debounce
@@ -353,55 +369,49 @@
           if(!r.collapsed) return void 0
           // let
           updateDoc(e)
-          //console.log('%c%s%s', 'background: black;color: white',doc.range.editNodeRelativeI)
-          if(doc.range.startOffset == 1 || doc.range.startOffset == 0) {
-            let n = dc.deleted(e.target, doc, this.worder)
-            dc.u(n.data)
-            //
-            if(doc.range.startOffset == 1&&doc.range.editNodeRelativeI>=1) {
-              let bp = doc.place.bpNode
-              let currI = doc.range.editNodeRelativeI-1
-              dc.asyncDom(() => {
-                let txtNode = getTextNode(bp.children[currI])
-                r.setStart(txtNode, txtNode.length)
-                r.setEnd(txtNode, txtNode.length)
+          if(doc.range.startOffset == 1||doc.range.startOffset == 0) {
+            if(doc.range.startOffset === 0&&+doc.range.editNodeRelativeI===0) {
+              dc.commit('delete.removeRow', {
+                el: e.target,
+                doc,
+                data: this.worder
+              }).nextTick((u) => {
+                if(u['data']) {
+                  let node = document.getElementsByClassName(u['prevBpNodePath'])[0]
+                  let sets = u['isZero'] ? 0: node.innerText.length
+                  doc.rangeSet(node, sets, sets)
+                }
               })
-
-            }
-            //
-            if(doc.range.startOffset == 1&&doc.range.editNodeRelativeI<1) {
-              dc.asyncDom(() => {
-                let txtNode = doc.range.editTxtNode
-                r.setStart(txtNode, 0)
-                r.setEnd(txtNode, 0)
-              })
-            }
-            // 需要删除行
-            if(doc.range.startOffset == 0&&doc.range.editNodeRelativeI<1) {
-              dc.u(n.data)
-
-              dc.asyncDom(() => {
-                let txtNode = n.prevTextNode
-                r.setStart(txtNode, n.prevEndOffset+1)
-                r.setEnd(txtNode, n.prevEndOffset+1)
-                trigger('beautifyPage', this.worder, doc, false)
+            }else {
+              dc.commit('delete.switch', {
+                el: e.target,
+                doc,
+                data: this.worder
+              }).nextTick((u) => {
+                if(u['prevNodePath']) {
+                  let node = document.getElementsByClassName(u['prevNodePath'])[0]
+                  let sets = node.innerText.length
+                  doc.rangeSet(node, sets, sets)
+                }else {
+                  let node = doc.range.editTxtNode
+                  doc.rangeSet(node, 0, 0)
+                }
               })
             }
 
-            trigger('save', this.worder)
-            return
           }else {
-            console.log('保存交给input事件')
-            //let n = dc.deleted(e.target, doc, this.worder)
-            // dc.u(n.data)
-           // delDebounce(e)
+            console.log('交给input')
           }
         })
         // 当删除到第一个或者第二个或多个文字选择禁止默认
         on(word,'delete.down', (e) => {
           let r = ranges()
           let startOffset = r.startOffset
-          if(startOffset== 1||startOffset == 0||(!r.collapsed)) {
+          if(+doc.getTxtNodeLocation() === 0&&startOffset == 1) {
+            console.log('zhege')
+            e.preventDefault()
+          }
+          if(startOffset == 0||startOffset == 1||(!r.collapsed)) {
             e.preventDefault()
           }
         })
@@ -410,15 +420,15 @@
           // if(!ranges().collapsed) {e.preventDefault(); return void 0}
         })
         // toolbar组件触发的生成select.table事件
-        on('toolbar.select.table', (data) => {
-          let u = dc.newTable(data, doc, this.worder, NORMAL_CONFIG)
-          dc.u(u.data)
-          let ref = u.path.replace(/\./g, '.:')
-          dc.asyncDom(function() {
+        on('toolbar.select.table', (selTable) => {
+          dc.commit('newTable', {
+            selTable, doc, data: this.worder, conf: NORMAL_CONFIG
+          }).nextTick((u) => {
+            let ref = u.path
             let el = this.$refs[ref].$el
             trigger('setH', this.worder, {node: el, path: u.path})
             trigger('setH', this.worder, {
-              node: document.getElementsByClassName(u.bpPath.replace(/\./g, '.:'))[0].parentNode.parentNode,
+              node: document.getElementsByClassName(u.bpPath)[0].parentNode.parentNode,
               path: u.bpPath
             })
             trigger('beautifyPage', this.worder, doc)
@@ -429,28 +439,24 @@
           NORMAL_CONFIG.bpTxt[type] = value['id'] === undefined? value: value['id']
           // console.log(NORMAL_CONFIG, 'NORMAL_CONFIG')
           NORMAL_CONFIG.bp['heads'] = false
-          let n = dc.uStyle(undefined, doc, this.worder, NORMAL_CONFIG)
-          // this.worder = n.data
-          dc.u(n.data)
-          dc.asyncDom(function(){
+          dc.commit('uStyle', {
+            el: undefined,
+            doc,
+            data: this.worder,
+            conf: NORMAL_CONFIG
+          }).nextTick((n) => {
             let node = document.getElementsByClassName(n.newEditElClass)[0]
             let txtNode = getTextNode(node)
-            window.$txtNode = txtNode
-    //         range(txtNode, 5, 5)
-            let r = ranges() // range对象
-            r.setStart(txtNode, 1)
-            r.setEnd(txtNode, 1)
-            let selection = window.getSelection()
-            selection.removeAllRanges()
-            // 插入新的光标对象
-            selection.addRange(r)
+            doc.rangeSet(txtNode, 1, 1, true)
           })
         })
         on('toolbar.select.bp', (value, type) => {
           NORMAL_CONFIG.bp['textAlign'] = value
-          let n = dc.textCenter(doc, this.worder, value)
-         //  this.worder = n
-          dc.u(n)
+          dc.commit('textCenter', {
+            doc,
+            data: this.worder,
+            value
+          })
         })
         on('leftbar.moveblock.move', ({e}) => {
           // console.log(e.target, 'e.target')
@@ -527,7 +533,7 @@
                             h,
                             pm.t,
                             pm,
-                            `m.:${pagei}.:m.:${pmi}`,
+                            `m.${pagei}.m.${pmi}`,
                             pmi,
                             false
                           )

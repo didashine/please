@@ -120,3 +120,7 @@ export let switchPage =(el, doc) => {
 *
 * */
 
+
+
+
+

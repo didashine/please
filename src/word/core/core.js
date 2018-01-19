@@ -33,7 +33,6 @@ export let easyB = (txt, configs) => {
   let noraml = {s: {
     ...configs.bpTxt
   }, t_txt: txt === undefined ? '\u00A0': txt, flag: false}
-
   return noraml
 }
 

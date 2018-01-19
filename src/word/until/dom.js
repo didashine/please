@@ -122,6 +122,7 @@ export function removeClass(el, cls) {
     el.className = trim(curClass);
   }
 };
+
 export let getTextNode = (node) => {
   if(node === undefined) {return undefined}
   if(node.nodeType == 3) {

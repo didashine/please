@@ -49,6 +49,5 @@ export default function(el) {
       isDown = false
     }
   })
-
   return nw;
 }

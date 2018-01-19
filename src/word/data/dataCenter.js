@@ -3,7 +3,7 @@ import {newRow, edit, deleted, uStyle} from '../core/edit'
 import {splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
 import {normalBp, normalTb, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode} from "../until/dom";
-import {spliceMap} from '../until/until'
+import {spliceMap, randomString} from '../until/until'
 import {NORMAL_CONFIG} from "../config/baseConfig";
 let t = true
 let isSpaceTxt=(txt) => {
@@ -43,7 +43,8 @@ let compareIsEqual = (compare, other) => {
   return false
 }
 // 需要bindvm
-export default function dataCenter(data, vm) {
+export default function dataCenter(data, vm, eventBind) {
+  let uid;
   let history = timeTraveler(12)
   history.record(data)
   let options = {
@@ -54,68 +55,128 @@ export default function dataCenter(data, vm) {
       vm = vms
       return options
     },
+
+    commit(commit, payload, exectedFn) {
+      uid = randomString(18)
+      let exec = {
+        executed: exectedFn,
+        afterExec: null
+      }
+      let v;
+      let execReturn =(rs) => {
+        if(typeof rs === 'boolean') {
+          return {
+            data: false
+          }
+        }
+        return rs['data'] ? rs: {data: rs}
+      }
+      options['_beforeExec'](commit)
+      if(options[commit]) {
+        v = execReturn(options[commit].call(vm, payload))
+      }else {
+        throw new Error(`没有找到对应commit[${commit}]`)
+      }
+      let api = {
+        _exec() {
+          options['_executed'](commit, v)
+          exec['executed']&&exec['executed'](v)
+        },
+        _afterExec() {
+          exec['afterExec']&&exec['afterExec'](v)
+        },
+        nextTick(fn) {
+          exec['afterExec'] = fn
+        }
+      }
+      // 触发执行
+      api._exec()
+      // dom结束回调
+      options['asyncDom'](() => {
+        api._afterExec()
+        options['_afterExec'](commit, v)
+      })
+      return api
+    },
+    _beforeExec() {
+
+    },
+    _executed(commit, v) {
+      if(v['data']) {
+        if(commit === 'autoBeautifyPage'&&v['doNoThing']) {
+          return;
+        }
+        options.u(v['data'], commit, uid);
+        eventBind.trigger('save', v['data']);
+      }
+    },
+    _afterExec() {
+
+    },
     fillInData(el, data, {name}) {
       if(hasClass(el, 'b_txt')) {
         let path = el.dataset.id
-        data = setProperty(data, replace(path)+'.t_txt', `@{${name}}`)
+        data = setProperty(data, path+'.t_txt', `@{${name}}`)
       }
       history.record(data)
       return data
     },
     //
     // 居中
-    textCenter(doc, data, value) {
+    ['textCenter']({doc, data, value}) {
       let bp = doc.place.bpAbsolutePath
       data = setProperty(data, bp+'.textAlign', value)
       history.record(data)
       return data
     },
     // 设置样式
-    uStyle(el, doc, data, conf) {
-      let update = uStyle(el, doc)
+    ['uStyle']({doc, data, conf}) {
+      // let update = uStyle(el, doc)
       // alert(JSON.stringify(data.toJS()))
-      let gep = getProperty(data, update.bpAbsolutePath+'.m')
+      let place = doc.place
+      let range = doc.range
+      let gep = getProperty(data, place.bpAbsolutePath+'.m')
       let currentBp = newArray(gep)
-      let oldBp = currentBp[update.editNodeRelativeI]
-      let currentEditI = update.editNodeRelativeI
+      let oldBp = currentBp[range.editNodeRelativeI]
+      let currentEditI = range.editNodeRelativeI
       let spaceReg = /^\u00A0/g
       let gen = [1, 0, 1]
       // alert(JSON.stringify(currentBp))
-      if((update.retainsTxt.match(spaceReg)&&update.retainsTxt.length<2)||update.retainsTxt.trim() === '') {
+      if((doc.getRetainsTxt().match(spaceReg)&&doc.getRetainsTxt().length<2)||doc.getRetainsTxt().trim() === '') {
         // 删除当前
         currentBp.splice(currentEditI, 1)
         // 生成全新
-        currentBp.splice(currentEditI+1, 0, easyB(update.retainsTxt, conf))
+        currentBp.splice(currentEditI+1, 0, easyB(doc.getRetainsTxt(), conf))
         gen = [0, 1, 1]
       }
-      if(update.interceptTxt.match(spaceReg)||update.interceptTxt.trim() === '') {
+      if(doc.getInterceptTxt().match(spaceReg)||doc.getInterceptTxt().trim() === '') {
         gen[2] = 0
       }
       if(!gen[0]) {
         // console.log('genNew')
         if(gen[2]) {
-          currentBp.splice(currentEditI+1, 0, {...oldBp, t_txt: update.interceptTxt} )
+          currentBp.splice(currentEditI+1, 0, {...oldBp, t_txt: doc.getInterceptTxt()} )
         }
       }
       if(gen[0]) {
         // 修改当前的
-        currentBp[currentEditI].t_txt = update.retainsTxt
+        currentBp[currentEditI].t_txt = doc.getRetainsTxt()
         // 生成新的
         currentBp.splice(currentEditI+1, 0, easyB(undefined, conf))
         if(gen[2]) {
-          currentBp.splice(currentEditI+2, 0, {...oldBp, t_txt: update.interceptTxt} )
+          currentBp.splice(currentEditI+2, 0, {...oldBp, t_txt: doc.getInterceptTxt()} )
         }
         // 补充
 
       }
-      data = setProperty(data, update.bpAbsolutePath+'.heads', false)
-      data = setProperty(data, update.bpAbsolutePath+'.m', currentBp)
-      let currAbPath = update.editNodeAbsolutePath.split('.').slice(0, -1)
+      data = setProperty(data, place.bpAbsolutePath+'.heads', false)
+      data = setProperty(data, place.bpAbsolutePath+'.m', currentBp)
+      let currAbPath = range.editNodeAbsolutePath.split('.').slice(0, -1)
       let newEditElClass = currAbPath.join('.')+'.'+ (gen[0] ? currentEditI+1: currentEditI)
       history.record(data)
-      return {newEditElClass: newEditElClass.replace(/\./g, '.:'), data}
+      return {newEditElClass: newEditElClass, data}
     },
-    newTable(selTable, doc, data, conf) {
+    ['newTable']({selTable, doc, data, conf}) {
 
       let path = doc.place.bpAbsolutePath.split('.').slice(0, -1)
       data = splice(data, path, doc.place.bpRelativeI+1, 0, normalTb(...selTable, conf))
@@ -126,164 +187,118 @@ export default function dataCenter(data, vm) {
         data: splice(data, path, doc.place.bpRelativeI+2, 0, normalBp(conf))}
     },
 
-    newRow(el, doc, data, conf) {
-      let update = newRow(el, doc)
+    ['newRow']({el, doc, data, conf}) {
       // 当前行
-      // 修改当前的数据
-      // 新建行数据
-      let sliceIntercept = sliceMutable(data, update.bpAbsolutePath+'.m', update.editNodeRelativeI, update.nodeNum)
-      sliceIntercept[0].t_txt = update.interceptTxt
+      // 在当前行当前编辑node
+      let sliceIntercept = sliceMutable(
+          data,
+          doc.place.bpAbsolutePath+'.m',
+          doc.range.editNodeRelativeI,
+          doc.getBpNodeNum().nodeNum
+          )
+      sliceIntercept[0].t_txt = doc.getInterceptTxt()
+      // -----------------
+      // 如果当前行开头存在莫名的空格，将其移除
       spliceMap(sliceIntercept, (b, i) => {
         if(isSpaceTxt(b.t_txt)) {
           sliceIntercept.splice(i, 1)
           return true
         }
       })
+
+
       // 设置当前行保留下来的数据
-      let sliceRetains = sliceMutable(data, update.bpAbsolutePath+'.m', 0, update.editNodeRelativeI+1)
-      sliceRetains[sliceRetains.length-1].t_txt = update.retainsTxt
+      let sliceRetains = sliceMutable(data, doc.place.bpAbsolutePath+'.m', 0, doc.range.editNodeRelativeI+1)
+      sliceRetains[sliceRetains.length-1].t_txt = doc.getRetainsTxt()
       // m.?.m
-      let path = update.bpAbsolutePath.split('.').slice(0, -1)
+
+      let path = doc.getBpLoaction()
       let newBp = normalBp(conf)
       sliceIntercept.length>0 ?(newBp.m = sliceIntercept) : newBp.m.push(...sliceIntercept)
-      data = setProperty(data, update.bpAbsolutePath+'.m', sliceRetains)
-      data = splice(data, path, update.bpRelativeI+1, 0, newBp)
+      data = setProperty(data, doc.place.bpAbsolutePath+'.m', sliceRetains)
+      data = splice(data, path, doc.place.bpRelativeI+1, 0, newBp)
       history.record(data)
-      return { data, newElClass:  [...path, update.bpRelativeI+1].join('.:'), newBpPath: [...path, update.bpRelativeI+1].join('.')}
+
+      return { data, nextBpPath: doc.getNextBpPath()}
+    },
+    // 需要切换node 此时startOffset为1或者0
+    ['delete.switch']({el, doc, data}) {
+      let place = doc.place
+      let range = doc.range
+      let i = doc.range.editNode.dataset.index
+      console.log(doc.getInterceptTxt())
+      let interceptTxt = doc.getInterceptTxt()
+      data = setProperty(data, range.editNodeAbsolutePath+'.t_txt', interceptTxt)
+      // 后面没有了删除节点
+      if(doc.getTxt().length<=1&&doc.getBpNodeNum()>1) {
+        data = splice(data, place.bpAbsolutePath+'.m', range.editNodeRelativeI, 1)
+      }
+      let toZero = false
+      console.log(i, doc.startOffset)
+      if(+i===0&&+doc.startOffset === 1) {
+        console.log('....')
+        toZero = true
+      }
+      return { data, prevNodePath: doc.range.editNodeRelativeI>=1&&doc.getPrevNodePath(), toZero}
+    },
+    ['delete.removeRow']({el, doc, data}) {
+      let place = doc.place
+      let range = doc.range
+      let sliceInterceptTxt = sliceMutable(data, place.bpAbsolutePath+'.m', range.editNodeRelativeI , doc.getBpNodeNum())
+      sliceInterceptTxt[0].t_txt = doc.getInterceptTxt()
+      // 删除空的文本
+      spliceMap(sliceInterceptTxt, (b, i) => {
+        if(isSpaceTxt(b.t_txt)) {
+          sliceInterceptTxt.splice(i, 1)
+          return true
+        }
+      })
+      let pages = getProperty(data, 'm')
+      let prevBpPath = doc.getPrevBpPath(pages)
+      let prevBpNodePath = '';
+      let isZero = false
+      if(prevBpPath) {
+
+        let prevBpData = getProperty(data, prevBpPath+'.m')
+        if(prevBpData.length === 1&&isSpaceTxt(prevBpData[0].t_txt)) {
+          // data = setProperty(data, prevBpPath+ '.m', [])
+          prevBpNodePath = prevBpPath+ '.m'+'.0'
+          isZero = true
+        }else {
+          prevBpNodePath = prevBpPath+'.m.'+(prevBpData.length-1)
+        }
+        console.log(prevBpPath, prevBpData.length, prevBpPath+'.m'+'.'+ (prevBpData.length-1), '...dsaffdsadfasdf')
+      }else {
+        return false
+      }
+      console.log(prevBpPath, prevBpNodePath, ...sliceInterceptTxt)
+
+      data = push(data, prevBpPath+'.m', ...sliceInterceptTxt)
+      data = splice(data, doc.getBpLoaction(), place.bpRelativeI, 1)
+      return {data, isZero, prevBpNodePath}
     },
     //
-    deleted(el, doc, data) {
-      let update = deleted(el, doc)
-      let switchSpan = false
-      let prevBp
-      let prevTextNode
-      let prevEndOffset
-
-      //
-      data= setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.editTxt)
-      // 第一种情况下
-      if(update.deleteStart == 1&&update.editNodeRelativeI>=1) {
-        switchSpan = true
-        // 如果后面没有内容了
-        if(update.editTxt.length<=1&&update.nodeNum>1) {
-          // 删除当前节点
-          data = splice(data, update.bpAbsolutePath+'.m', update.editNodeRelativeI, 1)
-        }
-        else {
-          // 还有内容
-          data = setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.interceptTxt)
-        }
-      }
-      // 删除文本
-      if(update.deleteStart == 1&&update.editNodeRelativeI<1) {
-        data = setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.interceptTxt)
-      }
-      if(update.deleteStart == 1&&update.editNodeRelativeI<1&&update.nodeNum>1) {
-        data = splice(data, update.bpAbsolutePath+'.m', update.editNodeRelativeI, 1)
-      }
-      if(update.deleteStart == 0&&update.editNodeRelativeI<1) {
-        // 如果后面没有内容了
-        // 还有内容
-        // data = setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.interceptTxt)
-        let n = options.removeRow(el, doc, data, update)
-        prevTextNode= n.prevTextNode
-        prevBp = n.prevBp
-        prevEndOffset = n.prevEndOffset
-        data = n.data
-      }
-      // 如果在第0个了并且不是在第一个span
-      // if(update.deleteStart == 0) {
-      //   let n = options.removeRow(el, doc, data, update)
-      //   prevTextNode= n.prevTextNode
-      //   prevBp = n.prevBp
-      //   prevEndOffset = n.prevEndOffset
-      //   data = n.data
-      //   // throw new Error('到了删除季节')
-      //
-      //   // options.removeRow(el, doc, data, update)
-      // }
-      // if(update.deleteStart == 0&&update.nodeNum == 1) {
-      //   switchSpan = true
-      //   let n = options.removeRow(el, doc, data, update)
-      // }
-      history.record(data)
-      return {
-        nodeNum: update.nodeNum,
-        needSelectRow: update.deleteStart == 0&&update.bpRelativeI>=1,
-        isBpBegin: update.deleteStart == 0,
-        // 是否需要删除节点
-        switchSpan,
-        // 删除文本的节点
-        deleteStart: update.deleteStart,
-        delNode: update.editNode,
-        prevTextNode,
-        prevBp,
-        prevEndOffset,
-        //
-        data
-      }
-
-    },
-    removeRow(el, doc, data, update) {
-      let path = update.bpAbsolutePath.split('.')
-      let bpRelativeI =  update.bpRelativeI
-      let prevBp;
-      let prevTextNode;
-      let editTxt = update.editTxt;
-      let spaceReg = /\u00A0/g
-      // 是否空， 空就一处段落
-      if((update.editTxt.match(spaceReg)||editTxt.trim() === '')&&update.nodeNum==1) {
-        data = splice(data, path.slice(0, -1), bpRelativeI, 1)
-      }else {
-        // 截取留下来的所有文本
-        let sliceInterceptTxt = sliceMutable(data, update.bpAbsolutePath+'.m', update.editNodeRelativeI , update.nodeNum)
-        sliceInterceptTxt[0].t_txt = update.interceptTxt
-        // 删除空的文本
-        spliceMap(sliceInterceptTxt, (b, i) => {
-          if(isSpaceTxt(b.t_txt)) {
-            sliceInterceptTxt.splice(i, 1)
-            return true
-          }
-        })
-        if(!doc.place.inTable&&doc.place.bpRelativeI === 0) {
-
-        }else {
-          let prevBpPath = [...path.slice(0, -1), bpRelativeI-1, 'm']
-
-          let prevBpData = getProperty(data, prevBpPath)
-          if(prevBpData.length === 1&&prevBpData[0].t_txt.match(spaceReg)) {
-            data = setProperty(data, prevBpPath, [])
-          }
-          data = push(data, prevBpPath, ...sliceInterceptTxt)
-          data = splice(data, path.slice(0, -1), bpRelativeI, 1)
-        }
-
-      }
-      // 切割路径
-      path.splice(path.length-1, 1, bpRelativeI-1)
-      prevBp = document.getElementsByClassName(path.join('.').replace(/\./g, '.:'))[0]
-      prevTextNode = getTextNode(prevBp.childNodes[prevBp.childNodes.length-1])
-        //let sliceRetains = splice()
-      return {
+    ['edit']({el, doc, data}) {
+      data = setProperty(
         data,
-        prevBp,
-        prevTextNode,
-        prevEndOffset: prevTextNode&&prevTextNode.textContent.trim().length
-      }
-    },
-    edit(value, doc, data) {
-      let update = edit(value, doc)
-      data = setProperty(data, update.editNodeAbsolutePath+'.t_txt', update.editTxt)
+        doc.range.editNodeAbsolutePath+'.t_txt',
+        doc.range.editTxtNode.textContent)
       history.record(data)
-      return {data, ...update}
+      return {data}
     },
     // 数据更新统一接口
     update: function(data) {
       this.worder = data
     }.bind(vm),
     // 快捷
-    u: function(data) {
+    u: function(data, commit, psd) {
+      if(psd!==uid) {
+        console.warn(
+          (commit=== undefined ? '未知处理commit': commit)+'没有正确提交， 数据被私自修改，不是来自commit')
+      }
+      console.log('%c%s', 'color: green', commit+'【commit】', psd)
       options.update(data)
+      return data
     }.bind(vm),
     //
     asyncDom: function(fn) {
@@ -291,35 +306,36 @@ export default function dataCenter(data, vm) {
         fn.call(this)
       })
     }.bind(vm),
-    setTableH(worder, el, path, bp) {
+    ['setTableH']({data, el, path, bp}) {
       let trDom = el.getElementsByTagName('tr')
-      let trData = bp? bp.m: getProperty(worder, path).m
+      let trData = bp? bp.m: getProperty(data, path).m
       trData.map((tr, tri) => {
-        worder = setProperty(
-          worder,
+        data = setProperty(
+          data,
           `${path}.m.${tri}.h`,
           trDom.item(tri).clientHeight)
         tr['td'].map((td, tdi) => {
           if(td.show) {
             td['t_bp'].map((tbp, tbpi) => {
               if(!tbpi['h']) {
-                let klass = `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`.replace(/\./g, '.:')+ '$bp'
-                worder = options.setBpH(
-                  worder,
-                  document.getElementsByClassName(klass)[0],
-                  `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`,
-                  true)
+                let klass = `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`+ '$bp'
+                data = options['setBpH']({
+                  data,
+                  el: document.getElementsByClassName(klass)[0],
+                  name: `${path}.m.${tri}.td.${tdi}.t_bp.${tbpi}`,
+                  offsetH: true
+                })
               }
             })
           }
         })
       })
-      return worder
+      return data
     },
-    setTr(worder, el, name) {
+    ['setTr']({data, el, name}) {
       let h = el.clientHeight
-      worder = setProperty(worder, name+'.h', h)
-      return worder
+      data = setProperty(data, name+'.h', h)
+      return data
     },
     setOffsetApartWord (el) {
       let pEl = el.offsetParent
@@ -335,32 +351,33 @@ export default function dataCenter(data, vm) {
       }
       // return offsetT
     },
-    setBpH(worder, el, name, offsetH = false) {
-
+    ['setBpH']({data, el, name, offsetH = false}) {
       let h = !offsetH? el.clientHeight: options.setOffsetApartWord(el)+el.offsetHeight
-      worder = setProperty(worder, name+ '.h', h)
-      return worder
+      data = setProperty(data, name+ '.h', h)
+      return data
     },
-
-    setH(worder) {
-      let pages = getProperty(worder, ['m'])
+    ['setH']({data}) {
+      let pages = getProperty(data, ['m'])
       pages.map((page, pi) => {
         page.m.map((bp, i) => {
           if(bp.t === 'bp') {
-            let className = `m.:${pi}.:m.:${i}$bp`
+            let className = `m.${pi}.m.${i}$bp`
             let el = document.getElementsByClassName(className)[0]
-            worder = options.setBpH(worder, el, `m.${pi}.m.${i}`)
+            data = options['setBpH']({data, el, name: `m.${pi}.m.${i}`})
           }
           if(bp.t === 'tb') {
-            let ref = `m.:${pi}.:m.:${i}`
-            worder = options.setTableH(
-              worder,
-              vm.$refs[ref].$el,
-              `m.${pi}.m.${i}`, bp)
+            let ref = `m.${pi}.m.${i}`
+            data = options['setTableH'](
+              {
+                data,
+                el: vm.$refs[ref].$el,
+                path: `m.${pi}.m.${i}`,
+                bp
+              })
           }
         })
       })
-      vm.worder = worder
+      return data
     },
     // 检查表格
     inspectCompleted(tr, originNum) {
@@ -381,7 +398,7 @@ export default function dataCenter(data, vm) {
     returnH(bp, path, i) {
       let bpH = bp.h
       if(bp.h == 0) {
-        let klass = (path+'.'+i).replace(/\./g, '.:')+'$bp'
+        let klass = (path+'.'+i)+'$bp'
         let el = document.getElementsByClassName(klass)[0]
         bpH = options.getH(el)
       }
@@ -589,7 +606,7 @@ export default function dataCenter(data, vm) {
       return trs
     },
     // 错误做法
-    autoBeautifyPage: function(down, support, isMerge, doc) {
+    ['autoBeautifyPage']: function({down, support, isMerge, doc}) {
       let data = this.worder
       // 是否有下一页
       let hasNext = (data, i)=> {
@@ -704,7 +721,7 @@ export default function dataCenter(data, vm) {
               if(has) {
                 let i = support['i'];
                 uEditPlace['is'] = true;
-                uEditPlace['class'] = `m.:${++i}.:m.:0.:m.:0`;
+                uEditPlace['class'] = `m.${++i}.m.0.m.0`;
               }
             }
             beautifyPage(
@@ -718,7 +735,6 @@ export default function dataCenter(data, vm) {
           }
         }:
         function(support, isMerge, doc) {
-          console.log(doc, 'doc..')
           // 判断是否有下一页
           if(!hasNext(data, support['i'])) {
             return void 0;
@@ -755,7 +771,7 @@ export default function dataCenter(data, vm) {
     //Undo: history.Undo.bind(history),
     Undo(){
       // t = false
-      history.Undo()
+      return history.Undo()
       // options.asyncDom(() => {
       //   t = true
       // })

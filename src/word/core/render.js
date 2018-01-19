@@ -4,7 +4,7 @@ let hasFillInData = (txt) => {
   return fillReg.test(txt)
 }
 
-let renderInd = (h, bp, b, data_id, bi) => {
+let renderInd = function(h, bp, b, data_id, bi) {
     return (
       <span
         style={
@@ -23,10 +23,10 @@ let renderInd = (h, bp, b, data_id, bi) => {
               {}
             )
         }
-        class={`b_txt ${data_id}.:${bi} ${b.flag ? 'active': ''}`}
-        data-index={bi} data-id={`${data_id}.:${bi}`}>
+        class={`b_txt ${data_id}.${bi} ${b.flag ? 'active': ''}`}
+        data-index={bi} data-id={`${data_id}.${bi}`}>
           {b.t_txt}
-        {showIcon(h, b, `${data_id}.:${bi}`)}
+        {showIcon(h, b, `${data_id}.${bi}`)}
       </span>
     )
 }
@@ -59,8 +59,9 @@ export let render = {
   renderB(h, bp, data_id) {
     return (
       this._l(bp.m, (b, bi) => {
+
         return(
-          renderInd(h, bp, b, data_id, bi)
+          renderInd.call(this, h, bp, b, data_id, bi)
         )
       })
     )
@@ -76,7 +77,7 @@ export let render = {
               data-index={index}
               data-id={data_id}
             >
-              {render.renderB.call(this, h, bp, data_id+ '.:m')}
+              {render.renderB.call(this, h, bp, data_id+ '.m')}
             </div>
         </div>
       </div>

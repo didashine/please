@@ -2,7 +2,7 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 import App from './App'
-// import App from './Hi'
+//import App from './Hi'
 import router from './router'
 import ProgressBar from './components/progressBar.vue'
 import immutable from './immutable'
