@@ -56,7 +56,7 @@ export default () => {
   fos = fos.setIn(['c'], h)
   arr.push(fos)
   arr.map((r) => {
-    console.log(r.getIn(['c']))
+    // console.log(r.getIn(['c']))
   })
   var stateV1 = Map({
     users: [
@@ -66,7 +66,7 @@ export default () => {
     ]
   });
   let stateV2 = stateV1.updateIn(['users'],(x, i) => {
-    console.log(x, 'x', i)
+    // console.log(x, 'x', i)
     let n = List(x).toJS()
     n.push({name: 'xxxx'})
     return n
@@ -79,6 +79,6 @@ export default () => {
   // let sv2 = stateV2.getIn(['users'])
   // let sv2m = sv2.slice(0,1)
   // sv2.splice(0, 1)
-
-  console.log(stateV2.getIn(['users']), stateV1.getIn(['users']))
+//
+  // console.log(stateV2.getIn(['users']), stateV1.getIn(['users']))
 }

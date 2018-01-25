@@ -1,6 +1,7 @@
 
 import {getTextNode, hasClass, siblingIncludeOwnerAndIndex} from "../until/dom";
 import { range as ranges } from './edit'
+import {range} from '../until/dom'
 // let getTextNode = (node) => {
 //   if(node.nodeType == 3) {
 //     return node
@@ -35,16 +36,18 @@ export default class Doc {
   setSpellStatus(type) {
     this.spellStatus = type
   }
-  rangeSet(txtNode, start, end, force = false) {
+  rangeSet(txtNode, start, end, force = true) {
     txtNode = getTextNode(txtNode)
-    let r = ranges() // range对象
-    r.setStart(txtNode, start)
-    r.setEnd(txtNode, end)
+    // let r = ranges() // range对象
+    // r.setStart(txtNode, start)
+    // r.setEnd(txtNode, end)
+    let r = range(txtNode, start, end)
     if(force) {
       let selection = window.getSelection()
       selection.removeAllRanges()
       // 插入新的光标对象
       selection.addRange(r)
+
     }
   }
   当前编辑节点的前面部分文字
@@ -66,22 +69,24 @@ export default class Doc {
   getBpNodeNum() {
     return this.range.editNode.parentNode.childNodes.length
   }
-  getNodeLoaction() {
-    return this.range.editNodeAbsolutePath.split('.').slice(0, -1).join('.')
+  getNodeLoaction(path) {
+    path = path || this.range.editNodeAbsolutePath;
+    return path.split('.').slice(0, -1).join('.')
   }
-  getPrevNodePath() {
+  getPrevNodePath(path) {
     let index = this.range.editNodeRelativeI
     if(index>=1) {
-      return this.getNodeLoaction()+'.'+(this.range.editNodeRelativeI-1)
+      return this.getNodeLoaction(path)+'.'+(this.range.editNodeRelativeI-1)
     }
     return false
   }
   // 获取bp路径
-  getBpLoaction() {
-    return this.place.bpAbsolutePath.split('.').slice(0, -1).join('.')
+  getBpLoaction(path) {
+    path = path || this.place.bpAbsolutePath;
+    return path.split('.').slice(0, -1).join('.');
   }
-  getNextBpPath() {
-    return this.getBpLoaction()+'.'+(this.place.bpRelativeI+1)
+  getNextBpPath(path) {
+    return this.getBpLoaction(path)+'.'+(this.place.bpRelativeI+1)
   }
   getTxtNodeLocation() {
     return this.range.editNode.dataset.index

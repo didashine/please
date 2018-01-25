@@ -3,7 +3,7 @@ import {newRow, edit, deleted, uStyle} from '../core/edit'
 import {splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
 import {normalBp, normalTb, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode} from "../until/dom";
-import {spliceMap, randomString} from '../until/until'
+import {spliceMap, randomString, deepClone} from '../until/until'
 import {NORMAL_CONFIG} from "../config/baseConfig";
 let t = true
 let isSpaceTxt=(txt) => {
@@ -48,6 +48,7 @@ export default function dataCenter(data, vm, eventBind) {
   let history = timeTraveler(12)
   history.record(data)
   let options = {
+    // 唯一获取数据接口
     getData(worder, name) {
       return getProperty(worder, name)
     },
@@ -125,7 +126,14 @@ export default function dataCenter(data, vm, eventBind) {
     // 居中
     ['textCenter']({doc, data, value}) {
       let bp = doc.place.bpAbsolutePath
-      data = setProperty(data, bp+'.textAlign', value)
+      data = setProperty(data, bp+'.bpStyle'+'.textAlign', value)
+      history.record(data)
+      return data
+    },
+    ['set.bp.style']({doc, data, value, type}) {
+      let bp = doc.place.bpAbsolutePath
+      console.log(bp+'.bpStyle.'+type)
+      data = setProperty(data, bp+'.bpStyle.'+type, value)
       history.record(data)
       return data
     },
@@ -169,10 +177,10 @@ export default function dataCenter(data, vm, eventBind) {
         // 补充
 
       }
-      data = setProperty(data, place.bpAbsolutePath+'.heads', false)
       data = setProperty(data, place.bpAbsolutePath+'.m', currentBp)
       let currAbPath = range.editNodeAbsolutePath.split('.').slice(0, -1)
       let newEditElClass = currAbPath.join('.')+'.'+ (gen[0] ? currentEditI+1: currentEditI)
+      data = setProperty(data, newEditElClass+'.s.heads', false)
       history.record(data)
       return {newEditElClass: newEditElClass, data}
     },
@@ -186,15 +194,108 @@ export default function dataCenter(data, vm, eventBind) {
         path: path.join('.')+'.'+(doc.place.bpRelativeI+1),
         data: splice(data, path, doc.place.bpRelativeI+2, 0, normalBp(conf))}
     },
-
+    ['auto.white.space']({data, doc, overChunks, conf, nowrap = false}) {
+      let endStr;
+      let endBpNodePath;
+      let spliceSec = [];
+      // 当前段落序号
+      let bpRelativeI = doc.place.bpRelativeI;
+      // 当前段落路径
+      let bpAbsolutePath = doc.place.bpAbsolutePath;
+      // 当前要处理的节点下标
+      let editNodeRelativeI;
+      console.log(overChunks, 'overChunks')
+      for(let i= 0;i< overChunks.length;i++) {
+        let overChunk = overChunks[i];
+        let prevChunk = overChunks[i-1]
+        let overNode = overChunk[0]['node'];
+        let prevNode = prevChunk&&prevChunk[0]['node'];
+        //
+        editNodeRelativeI = i=== prevNode ?
+          +overNode.dataset.index - (+prevNode.dataset.index):
+          +overNode.dataset.index;
+        let editNodeAbsolutePath = `${doc.getBpLoaction()}.${bpRelativeI}.m.${editNodeRelativeI}`;
+        // 配置
+        let bp = getProperty(data, bpAbsolutePath)
+        let bpTxt = getProperty(data, editNodeAbsolutePath+ '.s')
+        let h = bp['h']
+        // 配置
+        conf = {bp: {...bp['bpStyle']}, bpTxt: {...bpTxt}}
+        let firstChunk = overChunk.shift();
+        if(!nowrap) {
+          let dataV2 = supSplice(
+            data,
+            bpAbsolutePath+ '.m',
+            editNodeRelativeI+1,
+            +doc.getBpNodeNum()
+          )
+          spliceSec = dataV2['spliceData']
+          data = dataV2['data']
+          data = setProperty(
+            data,
+            editNodeAbsolutePath+ '.t_txt',
+            firstChunk.str)
+          overChunk.map((over, i) => {
+            // console.log(bpRelativeI, 'i', over)
+            data = options['insertBp']({
+              data,
+              path: doc.getBpLoaction(),
+              index: bpRelativeI+1+i,
+              txt: over.str,
+              h,
+              conf})
+          })
+          // 最后的node路径
+          bpRelativeI = overChunk.length+ bpRelativeI;
+          endStr = overChunk[overChunk.length-1].str;
+          // 获取分行最后哪一个段落路径
+          endBpNodePath = `${doc.getBpLoaction()}.${bpRelativeI}`;
+          if(spliceSec.length) {
+            data = push(data, endBpNodePath+'.m', ...spliceSec)
+          }
+        }else {
+          data = setProperty(
+            data,
+            editNodeAbsolutePath+ '.t_txt',
+            firstChunk.str)
+        }
+      }
+      // 第一次段落分行后的下标
+      bpRelativeI = overChunks[0].length+ doc.place.bpRelativeI;
+      // 第一次段落分行后的行路径
+      endBpNodePath = `${doc.getBpLoaction()}.${bpRelativeI}.m.0`;
+      let firstOverChunks = overChunks[0]
+      let lastOverChunk = firstOverChunks[firstOverChunks.length-1]
+      let start = doc.range.startOffset- (lastOverChunk['i']+1)
+      let isSame = doc.range.editNodeAbsolutePath === lastOverChunk['node'].dataset.id
+      console.log(start, 'start', doc.range.startOffset, lastOverChunk['i'])
+      return {
+        data,
+        endStr,
+        endBpNodePath: !isSame||start<0? doc.range.editNodeAbsolutePath: endBpNodePath,
+        start: !isSame||start<0? doc.range.startOffset: start}
+    },
+    ['insertBp']({data, path, txt, conf, index, h}) {
+      data = splice(data, path, index, 0, normalBp(conf, txt, h, true))
+      return data
+    },
+    ['fragment.interception']({path, i, num}) {
+      let sliceIntercept = sliceMutable(
+        data,
+        path,
+        i,
+        num
+      )
+      return sliceIntercept
+    },
     ['newRow']({el, doc, data, conf}) {
       // 当前行
-      // 在当前行当前编辑node
+      // 在当前行当前编辑node 表示到新行的数据
       let sliceIntercept = sliceMutable(
           data,
           doc.place.bpAbsolutePath+'.m',
           doc.range.editNodeRelativeI,
-          doc.getBpNodeNum().nodeNum
+          doc.getBpNodeNum()
           )
       sliceIntercept[0].t_txt = doc.getInterceptTxt()
       // -----------------
@@ -205,8 +306,6 @@ export default function dataCenter(data, vm, eventBind) {
           return true
         }
       })
-
-
       // 设置当前行保留下来的数据
       let sliceRetains = sliceMutable(data, doc.place.bpAbsolutePath+'.m', 0, doc.range.editNodeRelativeI+1)
       sliceRetains[sliceRetains.length-1].t_txt = doc.getRetainsTxt()
@@ -296,7 +395,7 @@ export default function dataCenter(data, vm, eventBind) {
         console.warn(
           (commit=== undefined ? '未知处理commit': commit)+'没有正确提交， 数据被私自修改，不是来自commit')
       }
-      console.log('%c%s', 'color: green', commit+'【commit】', psd)
+      console.log('%c%s', 'color: green', '【'+commit+'】'+'commit', psd)
       options.update(data)
       return data
     }.bind(vm),
@@ -535,6 +634,9 @@ export default function dataCenter(data, vm, eventBind) {
     *
     *
     * **/
+    ['intelligent.line']({bp}) {
+
+    },
     // 错误做法 智能截取table
     intelligentSliceTable(data, pageI, {bpI, l, trI}) {
       // 这里做截取table操作
@@ -605,6 +707,7 @@ export default function dataCenter(data, vm, eventBind) {
       })
       return trs
     },
+
     // 错误做法
     ['autoBeautifyPage']: function({down, support, isMerge, doc}) {
       let data = this.worder

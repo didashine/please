@@ -2,17 +2,24 @@ export let NORMAL_CONFIG = {
   bp: {
     textAlign: 'left',
     marginLeft: 0,
-    heads: false,
     headings: '正文',
-    space: 1.2,
+    space: 1.2
   },
   bpTxt: {
-    fontSize: 9,
+    heads: true,
+    fontSize: 48,
     color: '#000',
     fontFamily: 2,
     textDecoration: 'none'
   }
 }
+export let globa_config = {
+  isServer: true,
+  // 用户使用下还是报告编制人员下
+  isUser: false,
+  log: true
+}
+// 页配置
 export let pageConfig = {
   operateHeight: 923,
   height: 1083,
@@ -20,6 +27,7 @@ export let pageConfig = {
   padding: '80px 80px'
 
 }
+//
 export let headingsConfig = [
     {
       name: '正文',
@@ -30,7 +38,8 @@ export let headingsConfig = [
       bpTxt: {
         color: 'black',
         fontSize: '15px',
-        lineHeight: '18px'
+
+        lineHeight: 2.5
       }
     },
     {
@@ -40,7 +49,7 @@ export let headingsConfig = [
         space: 1.8
       },
       bpTxt: {
-        lineHeight: '67px',
+        lineHeight: 1.5,
         fontSize: '48px',
         color: '#1b2733'
       }
@@ -52,7 +61,7 @@ export let headingsConfig = [
         space: 2.5
       },
       bpTxt: {
-        lineHeight: '36px',
+        lineHeight: 1.5,
         fontSize: '32px',
         color: '#666666'
       }
@@ -64,7 +73,7 @@ export let headingsConfig = [
         space: 2.0
       },
       bpTxt: {
-        lineHeight: '33px',
+        lineHeight: 1.5,
         fontSize: '24px',
         color: '#1b2733'
       }
@@ -76,12 +85,13 @@ export let headingsConfig = [
         space: 1.9
       },
       bpTxt:  {
-        lineHeight: '21px',
+        lineHeight: 1.5,
         fontSize: '19px',
         color: '#1b2733'
       }
     }
   ]
+// 字号配置
 export let fontSize = [{
   name: '11px',
   id: 8
@@ -113,6 +123,7 @@ export let fontSize = [{
   name: '64px',
   id: 48
 }];
+// 字体配置
 export let fontFamily = [
   {
     name: '黑体',

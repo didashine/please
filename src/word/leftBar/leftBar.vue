@@ -16,11 +16,11 @@
               span {{da.name}}
 </template>
 <script>
-  import sTree from './tree.vue'
-  import formOrder from './data/formOrder.json'
-  import {JsonConvert} from './until/filedParse'
-  import {getStyle, getOffset} from './until/dom'
-  import drag from './until/drag'
+  import sTree from '../tree.vue'
+  import formOrder from '../data/formOrder.json'
+  import {JsonConvert} from '../until/filedParse'
+  import {getStyle, getOffset} from '../until/dom'
+  import drag from '../until/drag'
   export default {
     name: 'leftBar',
     data() {
@@ -30,7 +30,7 @@
       }
     },
     created() {
-      console.log(this.treeData, 'data')
+//      console.log(this.treeData, 'data')
     },
     mounted() {
       this.bindDrag()

@@ -1,7 +1,7 @@
 
 import { fontSize, headings, fontFamily, headingsConfig } from './baseConfig'
 
-let parseBox = (type ,configId, proto) => {
+export let parseBox = (type ,configId, proto) => {
   let defaultProto = {
     name: 'name',
     id: 'id'
@@ -33,7 +33,9 @@ export let parse = (bpConf, txtConf, priority) => {
       nativeConfig[pro] = conf[pro]
     }
   }
-  if(bpConf.heads) {
+
+  if(conf.heads) {
+    console.log(bpConf['headings'])
     let heading = parseBox(headingsConfig, bpConf['headings'], {id: 'name', name: type})
     Object.assign(nativeConfig, heading)
   }

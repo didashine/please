@@ -1,12 +1,11 @@
 import './table.styl'
-import drag from './until/drag'
-import {addClass, removeClass} from "./until/dom";
+import drag from '../until/drag'
+import {addClass, removeClass} from "../until/dom";
 // import Event from './until/event'
-import { once } from './until/until'
-import code from './core/code'
-import {bind} from "./core/eventBind";
-import {render} from "./core/render";
-import {splice, getMutable, replace, setProperty, getProperty, mined, push} from "./data/immutable";
+import code from '../core/code'
+import {bind} from "../core/eventBind";
+import {render} from "../core/render";
+import {splice, getMutable, replace, setProperty, getProperty, mined, push} from "../data/immutable";
 
 // function setProperty (obj, name, value) {
 //   name = (name + '').split(".");

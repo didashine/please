@@ -6,18 +6,16 @@ import App from './App'
 import router from './router'
 import ProgressBar from './components/progressBar.vue'
 import immutable from './immutable'
+import colorPicker from './vue-color-picker'
 immutable()
 import 'element-ui/lib/theme-default/index.css'
 import './assets/icon.css'
-import richCursor from './word/reg.js'
 import ElementUI from 'element-ui'
-import contextMenu from './word/contextMenu.vue'
+import contextMenu from './word/contextMenu/contextMenu.vue'
 import moveBlock from './word/moveblock.vue'
-import cursorComponent from './word/line.vue'
 Vue.config.productionTip = false
-
+Vue.use(colorPicker)
 Vue.use(ElementUI);
-Vue.use(richCursor)
 /* eslint-disable no-new */
 let menu = Vue.prototype.$contextMenu = new Vue(contextMenu).$mount()
 document.body.appendChild(menu.$el)

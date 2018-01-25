@@ -2,10 +2,10 @@
 
 <script type="text/jsx">
   // table组件
-  import xTable from './word/table.js'
+  import xTable from './word/table/table.js'
   // toolbar 组件
-  import frame from './word/frame.vue'
-  import leftBar from './word/leftBar.vue'
+  import frame from './word/frame/frame.vue'
+  import leftBar from './word/leftBar/leftBar.vue'
   // immutable数据生成方法
   const {Map} = require('immutable')
   // 数据中枢 用于修改页面数据
@@ -18,10 +18,12 @@
   import {normalPage} from './word/core/core'
   // render 函数
   import {render} from './word/core/render'
+  // overflow
+  import overflow from './word/core/overflow'
   // range对象生成
   import {range as ranges} from './word/core/edit'
   // dom获取
-  import {getTextNode, hasClass, prevNode, getStyle, getOffset, range} from './word/until/dom'
+  import {getTextNode, hasClass, prevNode, nextNodes, getStyle, getOffset, range} from './word/until/dom'
   // 事件绑定
   import { bind } from './word/core/eventBind'
   // 拖拽方法
@@ -30,6 +32,7 @@
   import {debounce} from './word/until/debounce'
   // store
   import {getStore, setStore} from './word/until/until'
+
   // 为表格填坑
   let fillWordToPit = () => {
     let NORMAL_CONFIG = normalConfig
@@ -58,15 +61,17 @@
       },
       updateToolbar (name, bI) {
         let bp = dc.getData(this.worder, name)
-//        let conf = {
-//          bpTxt: {...bp['m'][bI]['s']},
-//          bp: {...bp}
-//        }
-//        let toolBar = this.$refs['toolBar']
-//        toolBar.setValue(conf)
+
+        let conf = {
+          bpTxt: {...bp['m'][bI]['s']},
+          bp: {...bp['bpStyle']}
+        }
+        let toolBar = this.$refs['toolBar']
+        toolBar.setValue(conf)
       },
       // word初始化方法
       wordInit() {
+
         let worder = getStore('worderData') || {m: [normalPage(normalConfig)]}
         let data = Map(worder)
        //  this.worder = data
@@ -86,6 +91,7 @@
         // 渲染完后设置高度
         this.$nextTick(() => {
           dc.commit('setH', {data: this.worder})
+
           // dc.setH(this.worder)
         })
         this.setWordH()
@@ -216,6 +222,29 @@
             }
           })
         })
+        on(word, 'paste', (e) => {
+          // console.log('....', e.clipboardData.items, e)
+          // e.preventBubble()
+          // e.preventDefault()
+          for (var i = 0, len = e.clipboardData.items.length; i < len; i++) {
+            var item = e.clipboardData.items[i];
+            if (item.kind === "string") {
+              item.getAsString(function (str) {
+                let frag = document.createDocumentFragment();
+                let div = document.createElement('div');
+                div.innerHTML = str
+                div.id = 'clipDom'
+                frag.appendChild(div);
+                console.log(frag.getElementById('clipDom'))
+                // str 是获取到的字符串
+              })
+            } else if (item.kind === "file") {
+              var pasteFile = item.getAsFile();
+              console.log(pasteFile, 'str')
+              // pasteFile就是获取到的文件
+            }
+          }
+        })
         // ---------------------
         // 全局click事件
         on(document, 'click', (e) => {
@@ -267,7 +296,7 @@
         // mouseup 绑定更新doc
         on(word, 'mouseup', (e) => {
           // e.stopPropagation()
-          updateDoc(e)
+          doc.updateDoc(e)
         })
         // 离开输入法时产生的事件，
         // 这个单词带有补全的意思，
@@ -278,54 +307,148 @@
           }
         })
         // 全局编辑输入事件
-        on(word, 'input', debounce((e) => {
-          // console.log('hhhhh')
-          // console.log('wordInput')
-          // e.preventDefault()
+        let inputDebounce = debounce(
+          (e) => {
+
+            let t = doc.range.editNode.parentNode
+            if(t.scrollWidth>=t.parentNode.clientWidth) {
+             //  alert('over')
+            }
+            console.log(e.inputType, doc.spellStatus)
+            doc.updateDoc(e)
+            //  状态为输入法状态，并且为spellStatus为普通状态
+            if(e.inputType === 'insertCompositionText'
+              &&doc.spellStatus === 'originWriting') {
+              doc.setSpellStatus('typeWriting')
+              return;
+            }
+            // 状态为输入法状态，并且为spellStatus为输入状态
+            if(e.inputType === 'insertCompositionText'
+              &&doc.spellStatus === 'typeWriting') {
+              return;
+            }
+            // 状态为输入法结束状态
+            if(doc.spellStatus === 'typeWritingEnd') {
+              doc.setSpellStatus('originWriting')
+            }
+            let bpNode = doc.place.bpNode
+            // console.log(bpNode.parentNode.parentNode.offsetWidth, bpNode.scrollWidth)
+            if(bpNode.parentNode.parentNode.offsetWidth === bpNode.scrollWidth) {
+              // trigger('enter.down', e)
+              //  return
+            }
+            console.log('edit')
+            dc.commit('edit', {
+              e,
+              doc,
+              data: this.worder
+            }).nextTick((n) => {
+              let txtNode = getTextNode(doc.range.editNode)
+              doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
+              trigger('setH', this.worder, {
+                node: bpNode.parentNode.parentNode,
+                path: doc.place.bpAbsolutePath
+              })
+              trigger('beautifyPage', this.worder, doc)
+            })
+
+          }, 80, true)
+
+        on(word, 'input', (e, flag) => {
+
           doc.updateDoc(e)
+            console.time('search')
+            // dc.getData(this.worder, [doc])
+            console.timeEnd('search')
+          let editNode = doc.range.editNode
+          // 是拼音输入
+          // 兼容问题除了chrome好像都没这个值
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'originWriting') {
+            console.log('???')
             doc.setSpellStatus('typeWriting')
-            return;
+            this.nowrap = false
           }
+          // 状态为输入法状态，并且为spellStatus为输入状态
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'typeWriting') {
             return;
           }
-          if(doc.spellStatus === 'typeWritingEnd') {
+          // 状态为输入法结束状态
+         if(doc.spellStatus === 'typeWritingEnd'||flag) {
+            updateDoc(e)
             doc.setSpellStatus('originWriting')
-          }
-          let bpNode = doc.place.bpNode
-          // console.log(bpNode.parentNode.parentNode.offsetWidth, bpNode.scrollWidth)
-          if(bpNode.parentNode.parentNode.offsetWidth === bpNode.scrollWidth) {
-            // trigger('enter.down', e)
-           //  return
-          }
-          dc.commit('edit', {
-            e,
-            doc,
-            data: this.worder
-          }).nextTick((n) => {
-            let txtNode = getTextNode(doc.range.editNode)
-            doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
-            trigger('setH', this.worder, {
-              node: bpNode.parentNode.parentNode,
-              path: doc.place.bpAbsolutePath
-            })
-            trigger('beautifyPage', this.worder, doc)
-          })
-
-        }, 80, true)
+            // console.log(nextNodes(editNode), 'node')
+            let overChunks = overflow(
+              editNode.parentNode,
+              [editNode, ...nextNodes(editNode)],
+              630)
+            let data = this.worder
+           console.log(overChunks, 'overChunks')
+            if(overChunks.length> 0) {
+              dc.commit(
+                'auto.white.space',
+                {
+                  data,
+                  doc,
+                  overChunks: overChunks,
+                  conf: undefined
+                }, () => {
+                }).nextTick((u) => {
+                this.nowrap = true
+                // 这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
+                let node = document.getElementsByClassName(u.endBpNodePath)[0]
+                console.log(node, u, 'uuu')
+                let selection = window.getSelection()
+                selection.removeAllRanges(doc.range.r)
+                let r = range(node, u.start, u.start)
+                setTimeout(() => {
+                  selection.addRange(r)
+                }, 0)
+                trigger('beautifyPage', this.worder, doc)
+              })
+              return void 0;
+            }
+           }
+           // this.nowrap = true
+          //
+//          if(e.inputType !== 'insertCompositionText') {
+//            console.log('触发没')
+//            let data = this.worder
+//            let overChunks = overflow(editNode.parentNode, [editNode], 630)
+//            if(overChunks.length) {
+//              console.log('goch')
+//              dc.commit(
+//                'auto.white.space',
+//                {
+//                  data,
+//                  doc,
+//                  overChunks: overChunks,
+//                  conf: undefined,
+//                  nowrap: true
+//                }, () => {
+//                  console.timeEnd('calc')
+//                }).nextTick((u) => {
+//                let node = document.getElementsByClassName(u.endBpNodePath)[0]
+//                doc.rangeSet(node, 0, 0)
+//              });
+//              return void 0;
+//            }
+//          }
+          inputDebounce(e)
+        }
+          //debounce(
+        //, 80, true)
         )
         // enter按下换行
-        on('enter.down', (e) => {
+        on('enter.down', (e, data) => {
           e.preventDefault()
           doc.updateDoc(e)
           dc.commit('newRow',
             {
               el: e.target,
               doc,
-              data: this.worder,
+              data: data|| this.worder,
               conf: NORMAL_CONFIG
             }).nextTick((n) => {
               if(n['data']) {
@@ -368,7 +491,7 @@
           let r = ranges()
           if(!r.collapsed) return void 0
           // let
-          updateDoc(e)
+          doc.updateDoc(e)
           if(doc.range.startOffset == 1||doc.range.startOffset == 0) {
             if(doc.range.startOffset === 0&&+doc.range.editNodeRelativeI===0) {
               dc.commit('delete.removeRow', {
@@ -380,6 +503,8 @@
                   let node = document.getElementsByClassName(u['prevBpNodePath'])[0]
                   let sets = u['isZero'] ? 0: node.innerText.length
                   doc.rangeSet(node, sets, sets)
+
+                  // trigger('input', e, true)
                 }
               })
             }else {
@@ -408,7 +533,6 @@
           let r = ranges()
           let startOffset = r.startOffset
           if(+doc.getTxtNodeLocation() === 0&&startOffset == 1) {
-            console.log('zhege')
             e.preventDefault()
           }
           if(startOffset == 0||startOffset == 1||(!r.collapsed)) {
@@ -438,7 +562,7 @@
           // alert(JSON.stringify(this.worder.toJS()))
           NORMAL_CONFIG.bpTxt[type] = value['id'] === undefined? value: value['id']
           // console.log(NORMAL_CONFIG, 'NORMAL_CONFIG')
-          NORMAL_CONFIG.bp['heads'] = false
+          // NORMAL_CONFIG.bpTxt['heads'] = false
           dc.commit('uStyle', {
             el: undefined,
             doc,
@@ -451,11 +575,13 @@
           })
         })
         on('toolbar.select.bp', (value, type) => {
-          NORMAL_CONFIG.bp['textAlign'] = value
-          dc.commit('textCenter', {
+          console.log(value, type, 'hh')
+          NORMAL_CONFIG.bp[type] = value
+          dc.commit('set.bp.style', {
             doc,
             data: this.worder,
-            value
+            value,
+            type
           })
         })
         on('leftbar.moveblock.move', ({e}) => {
@@ -478,6 +604,7 @@
     data() {
       return {
         worder: null,
+        nowrap: true
       }
     },
     created() {
@@ -569,8 +696,11 @@
     margin-top: 0px;
   }
   .word-wrap {
+    background: url('/static/img/vn.jpg') no-repeat 100% 100%;
+    background-size: cover;
+    background-position: center center;
     position: relative;
-    background: rgba(234, 234, 234, 0.8)
+    /*background: rgb(234, 234, 234, 0.8);*/
   }
   .jfs-word {
     padding-top: 20px;
@@ -578,17 +708,21 @@
     top: 0;
     left: 50%;
     transform: translateX(-50%);
+
   }
   .page {
-    background: #fff;
+    background: rgba(255, 255, 255, 1);
+
     box-sizing: border-box;
   }
   .bp_txt {
+    word-break:break-all;
     display: inline-block;
   }
   .bp_txt .b_txt {
     word-break:break-all;
     position: relative;
+
   }
   .bp_txt .b_txt .icon{
     position: absolute;

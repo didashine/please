@@ -7,8 +7,8 @@
       span {{scale[0]}} 行 x {{scale[1]}} 列
 </template>
 <script>
-  import {addClass, removeClass} from './until/dom'
-  import Event from './until/event'
+  import {addClass, removeClass} from '../until/dom'
+  import Event from '../until/event'
   let event = new Event()
   export default {
     name: 'selTable',

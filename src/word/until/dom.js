@@ -83,6 +83,13 @@ export function prevNodes(node) {
     return sio.index>i
   })
 }
+export function nextNodes(node) {
+  let sio = siblingIncludeOwnerAndIndex(node)
+  return sio.sibling.filter((sibli, i) => {
+    // console.log(i, sio.index, 'i')
+    return sio.index<i
+  })
+}
 export function prevNodeTxtLength(node) {
   // console.log(prevNode(node), 'prevNode(node)')
   let l = 0
@@ -150,8 +157,10 @@ if (document.createRange) range = function(node, start, end, endNode) {
   node = getTextNode(node)
   endNode = getTextNode(endNode)
   let r = document.createRange()
-  r.setEnd(endNode || node, end)
+  // r.selectNode(node)
   r.setStart(node, start)
+  r.setEnd(endNode || node, end)
+  // r.collapse(true)
   return r
 }
 else range = function(node, start, end) {
@@ -162,6 +171,7 @@ else range = function(node, start, end) {
   r.collapse(true)
   r.moveEnd("character", end)
   r.moveStart("character", start)
+  r.select()
   return r
 };
 

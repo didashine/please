@@ -6,7 +6,7 @@
         span {{showId ? l.id: l.name}}
 </template>
 <script>
-  import Event from './until/event'
+  import Event from '../until/event'
   let event = new Event()
   export default {
     name: 'downmenu',

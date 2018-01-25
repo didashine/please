@@ -72,3 +72,22 @@ export function randomString(len) {
   }
   return pwd;
 }
+export function deepClone(obj){
+  let result = isClass(obj) == "Array"? []: {};
+  for(let key in obj){
+    let copy=obj[key];
+    if(typeof copy =="object"){
+      result[key]=deepClone(copy);
+    }else{
+      result[key]=obj[key];
+    }
+  }
+  return result;
+}
+export function isClass(o){
+  if(o===null) return "Null";
+  if(o===undefined) return "Undefined";
+  return Object.prototype.toString.call(o).slice(8,-1);
+}
+
+

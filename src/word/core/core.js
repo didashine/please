@@ -37,18 +37,21 @@ export let easyB = (txt, configs) => {
 }
 
 // 默认对象
-export let normalBp = (configs) => {
+export let normalBp = (configs, txt, h, join= false) => {
   configs = configs||NORMAL_CONFIG
 
   let normal = {
     hidden: false,
     t: 'bp',
-    h: 0,
-    ...configs.bp,
-    m: [easyB('\u00A0', configs)]
+    h: h||0,
+    join: join,
+    group: [],
+    bpStyle: {...configs.bp},
+    m: [easyB(txt!==undefined? txt: '\u00A0', configs)]
   }
   return normal
 }
+
 export let normalTd = (config, existConf) => {
 
   let normal = {

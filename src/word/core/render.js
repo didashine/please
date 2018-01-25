@@ -9,7 +9,7 @@ let renderInd = function(h, bp, b, data_id, bi) {
       <span
         style={
           parse(
-            bp,
+            bp.bpStyle,
             b.s,
             hasFillInData(
               b.t_txt) ?
@@ -53,13 +53,23 @@ export let render = {
   // 渲染表格
   renderTable(h, table, data_id) {
     return (
-      <x-table class='word_bp' data-type='table' {...{props: { renderData: table, app: this, dataId: data_id}}} ref={data_id}></x-table>
+      <x-table
+        class='word_bp'
+        data-type='table'
+        {...{
+          props: {
+            renderData: table,
+            app: this,
+            dataId: data_id
+          }
+        }}
+        ref={data_id}
+      ></x-table>
     )
   },
   renderB(h, bp, data_id) {
     return (
       this._l(bp.m, (b, bi) => {
-
         return(
           renderInd.call(this, h, bp, b, data_id, bi)
         )
@@ -71,11 +81,12 @@ export let render = {
     return (
       <div class={!!inTable ? "bp_format "+data_id+'$bp': "word_bp bp_format "+data_id+'$bp' } data-type={bp.t} data-intable={!!inTable}
       >
-        <div class="bp_indent" style={parse(bp)}>
+        <div class="bp_indent" style={parse(bp.bpStyle)}>
             <div
               class={`bp_txt ${data_id}`}
               data-index={index}
               data-id={data_id}
+              style={ this.nowrap? { 'whiteSpace':'nowrap'}: {}}
             >
               {render.renderB.call(this, h, bp, data_id+ '.m')}
             </div>

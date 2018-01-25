@@ -56,11 +56,11 @@
     top 0
     left 0
     ul.opera_tb
-      padding 10px 0
+      padding 2px 0
       li
         list-style none
         cursor pointer
-        padding 12px 10px
+        padding 8px 10px
         line-height 100%
         font-size 14px
         color #333
