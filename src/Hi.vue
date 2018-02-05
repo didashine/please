@@ -2,6 +2,7 @@
   div( id='app')
     me-input( :value='value', @input='input', ref='hh')
     input( :value='value', :class="value")
+    a( @click.native='link' href='') 3
     div
 </template>
 <script>
@@ -18,6 +19,9 @@
 
     },
     methods: {
+      link() {
+        return false;
+      },
       input: function (e) {
 
         e = typeof e === 'string' ? e: e.target.value

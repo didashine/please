@@ -1,7 +1,7 @@
 
 import {getTextNode, hasClass, siblingIncludeOwnerAndIndex} from "../until/dom";
 import { range as ranges } from './edit'
-import {range} from '../until/dom'
+import {range, siblingIncludeOwner} from '../until/dom'
 // let getTextNode = (node) => {
 //   if(node.nodeType == 3) {
 //     return node
@@ -66,27 +66,38 @@ export default class Doc {
     console.log(this.editTxtNode)
     return this.editTxtNode.textContent
   }
+  // 更名
   getBpNodeNum() {
     return this.range.editNode.parentNode.childNodes.length
   }
-  getNodeLoaction(path) {
+  getLineNodeNum() {
+    return siblingIncludeOwner(this.range.editNode).length
+  }
+  getNodeLocation(path) {
     path = path || this.range.editNodeAbsolutePath;
     return path.split('.').slice(0, -1).join('.')
   }
   getPrevNodePath(path) {
     let index = this.range.editNodeRelativeI
     if(index>=1) {
-      return this.getNodeLoaction(path)+'.'+(this.range.editNodeRelativeI-1)
+      return this.getNodeLocation(path)+'.'+(this.range.editNodeRelativeI-1)
     }
     return false
   }
   // 获取bp路径
-  getBpLoaction(path) {
+  getBpLocation(path) {
     path = path || this.place.bpAbsolutePath;
     return path.split('.').slice(0, -1).join('.');
   }
   getNextBpPath(path) {
-    return this.getBpLoaction(path)+'.'+(this.place.bpRelativeI+1)
+    return this.getBpLocation(path)+'.'+(this.place.bpRelativeI+1)
+  }
+  getLineLocation(path) {
+    path = path || this.place.lineAbsolutePath;
+    return path.split('.').slice(0, -1).join('.');
+  }
+  getNextLinePath(path) {
+    return this.getLineLocation(path)+'.'+(this.place.lineRelativeI+1)
   }
   getTxtNodeLocation() {
     return this.range.editNode.dataset.index
@@ -105,7 +116,7 @@ export default class Doc {
       let prevPagePath = `m.${prevPageId}.m`
       return prevPagePath+'.'+ pages[prevPageId].length-1
     }
-    return this.getBpLoaction()+'.'+(this.place.bpRelativeI-1)
+    return this.getBpLocation()+'.'+(this.place.bpRelativeI-1)
   }
   isHTMLElement (e) {
     return (e instanceof HTMLElement)
@@ -137,7 +148,7 @@ export default class Doc {
       if(hasClass(editBp, 'bp_txt')) {
         this.updateStruture(editBp, r.startOffset, r, e)
         this.vm.updateToolbar(
-          this.place.bpAbsolutePath,
+          this.place.lineAbsolutePath,
           this.range.editNodeRelativeI)
       }else {
         throw new Error('没选择')
@@ -152,13 +163,15 @@ export default class Doc {
     this.place = {
       docPath: node.dataset.id.match(/\d+/g)[0],
       // collapsed
-      bpNode: node,
+      lineNode: node,
       type: '',
-      inTable: !!node.parentNode.parentNode.dataset.intable,
-      // bp相对的index
-      bpRelativeI: parseInt(node.dataset.index),
+      // inTable: !!node.parentNode.parentNode.dataset.intable,
+      lineRelativeI: parseInt(node.dataset.index),
+      lineAbsolutePath: node.dataset.id,
       // bp绝对路径
-      bpAbsolutePath: node.dataset.id,
+      bpAbsolutePath: node.dataset['bpId'],
+      // bp相对的index
+      bpRelativeI: parseInt(node.dataset['bpIndex']),
       ...(exist||{})
     }
     let editTxtNode = r.commonAncestorContainer

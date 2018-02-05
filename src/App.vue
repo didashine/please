@@ -19,7 +19,7 @@
   // render 函数
   import {render} from './word/core/render'
   // overflow
-  import overflow from './word/core/overflow'
+  import { _overflow} from './word/core/overflow'
   // range对象生成
   import {range as ranges} from './word/core/edit'
   // dom获取
@@ -32,7 +32,7 @@
   import {debounce} from './word/until/debounce'
   // store
   import {getStore, setStore} from './word/until/until'
-
+  import './word/until/log'
   // 为表格填坑
   let fillWordToPit = () => {
     let NORMAL_CONFIG = normalConfig
@@ -78,6 +78,7 @@
         doc= new Doc(this)
         eventBind = bind(this, doc)
         dc= dataCenter(data, this, eventBind)
+        // console.log(data, '...')
         dc.u(data, '初始化')
       },
       // word绑定方法
@@ -90,69 +91,69 @@
         let trigger = eventBind.trigger
         // 渲染完后设置高度
         this.$nextTick(() => {
-          dc.commit('setH', {data: this.worder})
+         //  dc.commit('setH', {data: this.worder})
 
           // dc.setH(this.worder)
         })
         this.setWordH()
         // doc更新方法
-        let updateDoc = (e) => {
-          // 是否是dom
-          let isHTMLElement = (e) => {
-            return (e instanceof HTMLElement)
-          }
-          // 更新工具栏
-          let updateToolbar = (name, bI) => {
-            let bp = dc.getData(this.worder, name)
-            let conf = {
-              bpTxt: {...bp['m'][bI]['s']},
-              bp: {...bp}
-            }
-            let toolBar = this.$refs['toolBar']
-            toolBar.setValue(conf)
-          }
-          let r = ranges()
-          // 表示选中了多个部分
-          if(!r.collapsed) {
-            let isInSameBp = (startNode, endNode) => {
-              return startNode.parentNode == endNode.parentNode
-            }
-            let startNode = r.startContainer.parentNode
-            let endNode = r.endContainer.parentNode
-            if(isInSameBp(startNode, endNode)) {
-                let chunkDoc = {}
-                let node = startNode.parentNode
-                // console.log(node, 'nodeNum', r.startContainer)
-                let startIndex = r.startContainer.parentNode.dataset.index
-                let endIndex = r.endContainer.parentNode.dataset.index
-
-                chunkDoc = {
-                  area: [parseInt(startIndex), parseInt(endIndex)],
-                  els: [r.startContainer, r.endContainer]
-                }
-                doc.updateStruture(node, r.startOffset, r, chunkDoc)
-              return
-              }else {
-              throw new Error('不通过，我们不一样')
-            }
-
-          }
-          // 更新toolbar
-          // doc设定当前编辑bp部分
-          let editNode  = r.commonAncestorContainer.parentNode
-          let editBp = editNode.parentNode
-          if(!isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
-            if(hasClass(editBp, 'bp_txt')) {
-              doc.updateStruture(editBp, r.startOffset, r, e)
-              updateToolbar(doc.place.bpAbsolutePath, doc.range.editNodeRelativeI)
-            }else {
-              throw new Error('没选择')
-            }
-          }
-          if(isHTMLElement(e)) {
-            doc.updateStruture(e, r.startOffset, r)
-          }
-        }
+//        let updateDoc = (e) => {
+//          // 是否是dom
+//          let isHTMLElement = (e) => {
+//            return (e instanceof HTMLElement)
+//          }
+//          // 更新工具栏
+//          let updateToolbar = (name, bI) => {
+//            let bp = dc.getData(this.worder, name)
+//            let conf = {
+//              bpTxt: {...bp['m'][bI]['s']},
+//              bp: {...bp}
+//            }
+//            let toolBar = this.$refs['toolBar']
+//            toolBar.setValue(conf)
+//          }
+//          let r = ranges()
+//          // 表示选中了多个部分
+//          if(!r.collapsed) {
+//            let isInSameBp = (startNode, endNode) => {
+//              return startNode.parentNode == endNode.parentNode
+//            }
+//            let startNode = r.startContainer.parentNode
+//            let endNode = r.endContainer.parentNode
+//            if(isInSameBp(startNode, endNode)) {
+//                let chunkDoc = {}
+//                let node = startNode.parentNode
+//                // console.log(node, 'nodeNum', r.startContainer)
+//                let startIndex = r.startContainer.parentNode.dataset.index
+//                let endIndex = r.endContainer.parentNode.dataset.index
+//
+//                chunkDoc = {
+//                  area: [parseInt(startIndex), parseInt(endIndex)],
+//                  els: [r.startContainer, r.endContainer]
+//                }
+//                doc.updateStruture(node, r.startOffset, r, chunkDoc)
+//              return
+//              }else {
+//              throw new Error('不通过，我们不一样')
+//            }
+//
+//          }
+//          // 更新toolbar
+//          // doc设定当前编辑bp部分
+//          let editNode  = r.commonAncestorContainer.parentNode
+//          let editBp = editNode.parentNode
+//          if(!isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
+//            if(hasClass(editBp, 'bp_txt')) {
+//              doc.updateStruture(editBp, r.startOffset, r, e)
+//              updateToolbar(doc.place.bpAbsolutePath, doc.range.editNodeRelativeI)
+//            }else {
+//              throw new Error('没选择')
+//            }
+//          }
+//          if(isHTMLElement(e)) {
+//            doc.updateStruture(e, r.startOffset, r)
+//          }
+//        }
         on('command+z', debounce((e) => {
          // this.worder = dc.Undo()
           let d = dc.Undo()
@@ -169,7 +170,9 @@
         })
         // .......
         on('save', (data) => {
+          console.time('save')
           setStore('worderData', data.toJS())
+          console.timeEnd('save')
         })
         on('setH', (data, {node, path}) => {
           if(hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
@@ -235,7 +238,6 @@
                 div.innerHTML = str
                 div.id = 'clipDom'
                 frag.appendChild(div);
-                console.log(frag.getElementById('clipDom'))
                 // str 是获取到的字符串
               })
             } else if (item.kind === "file") {
@@ -309,47 +311,37 @@
         // 全局编辑输入事件
         let inputDebounce = debounce(
           (e) => {
-
-            let t = doc.range.editNode.parentNode
-            if(t.scrollWidth>=t.parentNode.clientWidth) {
-             //  alert('over')
-            }
-            console.log(e.inputType, doc.spellStatus)
+          console.log('hh')
             doc.updateDoc(e)
             //  状态为输入法状态，并且为spellStatus为普通状态
-            if(e.inputType === 'insertCompositionText'
-              &&doc.spellStatus === 'originWriting') {
-              doc.setSpellStatus('typeWriting')
-              return;
-            }
-            // 状态为输入法状态，并且为spellStatus为输入状态
-            if(e.inputType === 'insertCompositionText'
-              &&doc.spellStatus === 'typeWriting') {
-              return;
-            }
-            // 状态为输入法结束状态
-            if(doc.spellStatus === 'typeWritingEnd') {
-              doc.setSpellStatus('originWriting')
-            }
+//            if(e.inputType === 'insertCompositionText'
+//              &&doc.spellStatus === 'originWriting') {
+//              doc.setSpellStatus('typeWriting')
+//              return;
+//            }
+//            // 状态为输入法状态，并且为spellStatus为输入状态
+//            if(e.inputType === 'insertCompositionText'
+//              &&doc.spellStatus === 'typeWriting') {
+//              return;
+//            }
+//            // 状态为输入法结束状态
+//            if(doc.spellStatus === 'typeWritingEnd') {
+//              doc.setSpellStatus('originWriting')
+//            }
             let bpNode = doc.place.bpNode
-            // console.log(bpNode.parentNode.parentNode.offsetWidth, bpNode.scrollWidth)
-            if(bpNode.parentNode.parentNode.offsetWidth === bpNode.scrollWidth) {
-              // trigger('enter.down', e)
-              //  return
-            }
-            console.log('edit')
+
             dc.commit('edit', {
               e,
               doc,
               data: this.worder
+            }, () => {
+              this.$forceUpdate()
             }).nextTick((n) => {
               let txtNode = getTextNode(doc.range.editNode)
+              // console.log(txtNode, 'txtNodew')
               doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
-              trigger('setH', this.worder, {
-                node: bpNode.parentNode.parentNode,
-                path: doc.place.bpAbsolutePath
-              })
-              trigger('beautifyPage', this.worder, doc)
+
+              // trigger('beautifyPage', this.worder, doc)
             })
 
           }, 80, true)
@@ -357,17 +349,16 @@
         on(word, 'input', (e, flag) => {
 
           doc.updateDoc(e)
-            console.time('search')
-            // dc.getData(this.worder, [doc])
-            console.timeEnd('search')
+
           let editNode = doc.range.editNode
           // 是拼音输入
           // 兼容问题除了chrome好像都没这个值
+          // this.autoHeight = true;
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'originWriting') {
-            console.log('???')
             doc.setSpellStatus('typeWriting')
-            this.nowrap = false
+            // this.nowrap = false
+
           }
           // 状态为输入法状态，并且为spellStatus为输入状态
           if(e.inputType === 'insertCompositionText'
@@ -376,42 +367,59 @@
           }
           // 状态为输入法结束状态
          if(doc.spellStatus === 'typeWritingEnd'||flag) {
-            updateDoc(e)
+           // this.nowrap = true
+            doc.updateDoc(e)
+            // this.autoHeight = false;
             doc.setSpellStatus('originWriting')
             // console.log(nextNodes(editNode), 'node')
-            let overChunks = overflow(
+         }
+         console.time('c')
+            let over = _overflow(
               editNode.parentNode,
               [editNode, ...nextNodes(editNode)],
               630)
             let data = this.worder
-           console.log(overChunks, 'overChunks')
-            if(overChunks.length> 0) {
+          // console.log(over, 'over')
+            if(over['isOver']) {
+            // alert('tiao')
               dc.commit(
                 'auto.white.space',
                 {
                   data,
                   doc,
-                  overChunks: overChunks,
+                  over,
                   conf: undefined
                 }, () => {
+                  this.$forceUpdate()
+                  console.timeEnd('c')
                 }).nextTick((u) => {
-                this.nowrap = true
+
                 // 这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
-                let node = document.getElementsByClassName(u.endBpNodePath)[0]
-                console.log(node, u, 'uuu')
-                let selection = window.getSelection()
-                selection.removeAllRanges(doc.range.r)
-                let r = range(node, u.start, u.start)
-                setTimeout(() => {
-                  selection.addRange(r)
-                }, 0)
-                trigger('beautifyPage', this.worder, doc)
+//                let node = document.getElementsByClassName(u.endBpNodePath)[0]
+//                let selection = window.getSelection()
+//                selection.removeAllRanges(doc.range.r)
+//                let r = range(node, u.start, u.start)
+//                setTimeout(() => {
+//                  selection.addRange(r)
+//                }, 0)
+//                trigger('beautifyPage', this.worder, doc)
               })
               return void 0;
             }
-           }
            // this.nowrap = true
           //
+           //  this.autoHeight = false;
+
+
+
+
+
+          // >>>>>>>>>>>
+//            let overChunks = overflow(editNode.parentNode, [editNode], 630)
+//            if(overChunks.length>1) {
+////              console.log(overChunks, '....')
+//            }
+          // <<<<<<<<<<<
 //          if(e.inputType !== 'insertCompositionText') {
 //            console.log('触发没')
 //            let data = this.worder
@@ -448,16 +456,18 @@
             {
               el: e.target,
               doc,
-              data: data|| this.worder,
+              data: this.worder,
               conf: NORMAL_CONFIG
             }).nextTick((n) => {
               if(n['data']) {
-                let txtBp = document.getElementsByClassName(n.nextBpPath)[0];
+                // console.log(n, 'n')
+                let txtBp = document.getElementsByClassName(n.nextLinePath)[0];
+
                 let node = txtBp.childNodes[0]
                 doc.rangeSet(node,0, 0)
                 doc.updateDoc(txtBp)
-                trigger('setH', this.worder, {node: txtBp.parentNode.parentNode, path: n.nextBpPath})
-                trigger('beautifyPage', this.worder, doc)
+                // trigger('setH', this.worder, {node: txtBp.parentNode.parentNode, path: n.nextBpPath})
+                // trigger('beautifyPage', this.worder, doc)
               }
             })
           // let n = dc.newRow(e.target, doc, this.worder, NORMAL_CONFIG)
@@ -545,8 +555,11 @@
         })
         // toolbar组件触发的生成select.table事件
         on('toolbar.select.table', (selTable) => {
+          console.time('newTable')
           dc.commit('newTable', {
             selTable, doc, data: this.worder, conf: NORMAL_CONFIG
+          }, () => {
+            console.timeEnd('newTable')
           }).nextTick((u) => {
             let ref = u.path
             let el = this.$refs[ref].$el
@@ -575,7 +588,6 @@
           })
         })
         on('toolbar.select.bp', (value, type) => {
-          console.log(value, type, 'hh')
           NORMAL_CONFIG.bp[type] = value
           dc.commit('set.bp.style', {
             doc,
@@ -604,7 +616,8 @@
     data() {
       return {
         worder: null,
-        nowrap: true
+        nowrap: false,
+        autoHeight: false
       }
     },
     created() {
@@ -696,7 +709,7 @@
     margin-top: 0px;
   }
   .word-wrap {
-    background: url('/static/img/vn.jpg') no-repeat 100% 100%;
+    background: url('/static/img/yang.jpeg') no-repeat 100% 100%;
     background-size: cover;
     background-position: center center;
     position: relative;
@@ -715,9 +728,17 @@
 
     box-sizing: border-box;
   }
+  .bp_format {
+    border-bottom: 1px solid blueviolet;
+
+  }
+  .bp_indent {
+    position: relative;
+  }
   .bp_txt {
     word-break:break-all;
     display: inline-block;
+    position:relative;
   }
   .bp_txt .b_txt {
     word-break:break-all;

@@ -28,30 +28,41 @@ export let normalPage = (config, m) => {
 
 // &#65279;
 // \u00A0
-export let easyB = (txt, configs) => {
+export let easyB = (txt, configs, patchCode) => {
+  // console.log()
   configs = configs||NORMAL_CONFIG
   let noraml = {s: {
     ...configs.bpTxt
-  }, t_txt: txt === undefined ? '\u00A0': txt, flag: false}
+  }, t_txt: txt === undefined ? '\u00A0': txt, flag: false, patchCode: patchCode||''}
   return noraml
 }
 
-// 默认对象
-export let normalBp = (configs, txt, h, join= false) => {
-  configs = configs||NORMAL_CONFIG
+// 默认段落对象
+export let normalBp = (configs, txt, patchCode) => {
+  configs = configs||NORMAL_CONFIG;
+
 
   let normal = {
     hidden: false,
     t: 'bp',
-    h: h||0,
-    join: join,
-    group: [],
-    bpStyle: {...configs.bp},
-    m: [easyB(txt!==undefined? txt: '\u00A0', configs)]
+    h: 0,
+    m: [
+      // 内部行
+      aloneBp(configs, txt, patchCode)
+
+    ],
+    bpStyle: {...configs.bp}
+    // m: [easyB(txt!==undefined? txt: '\u00A0', configs)]
   }
   return normal
 }
-
+export let aloneBp = (configs, txt, patchCode) => {
+  configs = configs||NORMAL_CONFIG;
+  return {m:[easyB(txt!==undefined? txt: '\u00A0', configs, patchCode)], t: 'line'}
+}
+export let normalGroupBp = () => {
+  let normal = []
+}
 export let normalTd = (config, existConf) => {
 
   let normal = {

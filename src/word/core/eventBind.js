@@ -73,7 +73,7 @@ export let bind = (vm, doc) => {
      if (code == 91) {
        MEvt.onKeyDown((code, e) => {
          if(code == 90) {
-           event.trigger('command+z', e, down)
+           event.trigger('command+z', e)
          }
        })
      }
@@ -82,7 +82,7 @@ export let bind = (vm, doc) => {
      if (code == 91) {
        MEvt.onKeyDown((code, e) => {
          if(code == 90) {
-           event.trigger('command+z', e, down)
+           event.trigger('command+z', e)
          }
        })
      }
@@ -92,43 +92,43 @@ export let bind = (vm, doc) => {
        MEvt.onKeyDown((code, e) => {
          if(code == 89) {
            e.preventDefault()
-           event.trigger('command+y', e, down)
+           event.trigger('command+y', e)
          }
        })
      }
    })
    MEvt.onKeyDown((code, e) => {
      if(code == 8) {
-       event.trigger('delete.down', e, down)
+       event.trigger('delete.down', e)
      }
    })
    MEvt.onKeyUp((code, e) => {
      if(code == 8) {
-       event.trigger('delete.up', e, down)
+       event.trigger('delete.up', e)
      }
    })
    MEvt.onKeyDown((code, e) => {
      if(code == 13) {
        // console.log('', 'enger')
-       event.trigger('enter.down', e, down)
+       event.trigger('enter.down', e)
      }
    })
    MEvt.onKeyUp((code, e) => {
      if(code == 13) {
        // console.log('', 'enger')
-       event.trigger('enter.up', e, down)
+       event.trigger('enter.up', e)
      }
    })
    MEvt.onKeyDown((code, e) => {
      down = true
      if(code == 16) {
-       event.trigger('ctrl.down', e, down)
+       event.trigger('ctrl.down', e)
      }
    })
    MEvt.onKeyUp((code, e) => {
      down = false
      if(code == 16) {
-       event.trigger('ctrl.up', e, down)
+       event.trigger('ctrl.up', e)
      }
    })
 

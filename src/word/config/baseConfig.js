@@ -3,11 +3,12 @@ export let NORMAL_CONFIG = {
     textAlign: 'left',
     marginLeft: 0,
     headings: '正文',
-    space: 1.2
+    space: 1.4,
+    height: 0,
   },
   bpTxt: {
-    heads: true,
-    fontSize: 48,
+    heads: false,
+    fontSize: 36,
     color: '#000',
     fontFamily: 2,
     textDecoration: 'none'
@@ -33,13 +34,11 @@ export let headingsConfig = [
       name: '正文',
       bp: {
         // height: '24px',
-        space: 1.6
+        space: 4.6
       },
       bpTxt: {
         color: 'black',
-        fontSize: '15px',
-
-        lineHeight: 2.5
+        fontSize: 11
       }
     },
     {
@@ -49,8 +48,7 @@ export let headingsConfig = [
         space: 1.8
       },
       bpTxt: {
-        lineHeight: 1.5,
-        fontSize: '48px',
+        fontSize: 36,
         color: '#1b2733'
       }
     },
@@ -61,8 +59,7 @@ export let headingsConfig = [
         space: 2.5
       },
       bpTxt: {
-        lineHeight: 1.5,
-        fontSize: '32px',
+        fontSize: 24,
         color: '#666666'
       }
     },
@@ -73,8 +70,7 @@ export let headingsConfig = [
         space: 2.0
       },
       bpTxt: {
-        lineHeight: 1.5,
-        fontSize: '24px',
+        fontSize: 18,
         color: '#1b2733'
       }
     },
@@ -85,8 +81,7 @@ export let headingsConfig = [
         space: 1.9
       },
       bpTxt:  {
-        lineHeight: 1.5,
-        fontSize: '19px',
+        fontSize: 14,
         color: '#1b2733'
       }
     }

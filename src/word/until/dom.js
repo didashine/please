@@ -75,7 +75,10 @@ export function siblingIncludeOwnerAndIndex(node) {
   }
 
 }
-
+export function siblingIncludeOwner(node) {
+  let parent = node.parentNode
+  return parent.childNodes
+}
 export function prevNodes(node) {
   let sio = siblingIncludeOwnerAndIndex(node)
   return sio.sibling.filter((sibli, i) => {
@@ -129,7 +132,9 @@ export function removeClass(el, cls) {
     el.className = trim(curClass);
   }
 };
-
+export let byClass = (name) => {
+  return document.getElementsByClassName(name)
+}
 export let getTextNode = (node) => {
   if(node === undefined) {return undefined}
   if(node.nodeType == 3) {
@@ -140,6 +145,7 @@ export let getTextNode = (node) => {
     if(node.nodeType == 3) return true
   })[0]
 }
+
 export function getStyle (obj, css) {
   return obj.currentStyle ? obj.currentStyle[css] :
     getComputedStyle(obj, false)[css]

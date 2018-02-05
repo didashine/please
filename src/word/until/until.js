@@ -89,5 +89,14 @@ export function isClass(o){
   if(o===undefined) return "Undefined";
   return Object.prototype.toString.call(o).slice(8,-1);
 }
+export let _last = (arr) => {
+  return arr[arr.length- 1];
+}
 
+export function each() {
+
+}
+export function decide(condition) {
+
+}
 

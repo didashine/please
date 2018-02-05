@@ -8,8 +8,9 @@ let renderInd = function(h, bp, b, data_id, bi) {
     return (
       <span
         style={
-          parse(
-            bp.bpStyle,
+          parse.call(this,
+            'bpTxt',
+            bp,
             b.s,
             hasFillInData(
               b.t_txt) ?
@@ -67,30 +68,54 @@ export let render = {
       ></x-table>
     )
   },
-  renderB(h, bp, data_id) {
+  renderB(h, bp, line, data_id) {
     return (
-      this._l(bp.m, (b, bi) => {
+      this._l(line['m'], (b, bi) => {
         return(
           renderInd.call(this, h, bp, b, data_id, bi)
         )
       })
     )
   },
-  // 渲染普通行
-  renderBp(h, bp, data_id, index, inTable) {
+  renderBpGroup(h, bpGroup, data_id, index, inTable) {
     return (
-      <div class={!!inTable ? "bp_format "+data_id+'$bp': "word_bp bp_format "+data_id+'$bp' } data-type={bp.t} data-intable={!!inTable}
-      >
-        <div class="bp_indent" style={parse(bp.bpStyle)}>
-            <div
-              class={`bp_txt ${data_id}`}
-              data-index={index}
-              data-id={data_id}
-              style={ this.nowrap? { 'whiteSpace':'nowrap'}: {}}
-            >
-              {render.renderB.call(this, h, bp, data_id+ '.m')}
-            </div>
-        </div>
+      <div class={"bp_group "+data_id}>
+        {
+          this._l(bpGroup.group, (bp, index) => {
+            return render.renderB.call(this, h, bp, data_id+ '.group'+ index)
+          })
+        }
+      </div>
+    )
+  },
+  // 渲染普通行
+  renderBp(h, bp, data_id, index) {
+    return (
+      <div class={"kr-fv bp_format "+data_id} data-type={bp.t} data-index={index} data-id={data_id}>
+        {
+          this._l(bp['m'], (line, lineI) => {
+            return (
+              <div data-type={line.t}>
+                <div class="kr-xu bp_indent" style={parse.call(this, 'bp', bp, line['m'], line)}
+                >
+                <span
+                  class={`bp_txt ${data_id}.m.${lineI}`}
+                  data-bp-id={data_id}
+                  data-bp-index={index}
+                  data-index={lineI}
+                  data-id={data_id+'.m.'+ lineI}
+                  style={ this.nowrap?
+                    { 'whiteSpace':'nowrap'}: {}}
+                >
+                  {render.renderB.call(this, h, bp, line, data_id+'.m.'+ lineI+ '.m')}
+                </span>
+                </div>
+              </div>
+
+            )
+          })
+        }
+
       </div>
     )
 

@@ -23,8 +23,10 @@ export const push = function(obj, name, ...value) {
   // o.push(...value)
   // return obj.setIn(typeof name === 'string'? name.split('.'): name, o)
   name = typeof name === 'string'? name.split('.'): name
+  console.log(obj.getIn(name), 'obj')
   return obj.updateIn(name, (x) => {
     let n = List(x).toJS()
+    console.log(value, n, 'hheleo')
     n.push(...value)
     return n
   })
@@ -34,7 +36,9 @@ export const unshift = function(obj, name, ...value) {
   // let newArr = newArray(o)
   // newArr.unshift(...value)
   // o.unshift(...value)
+
   name = typeof name === 'string'? name.split('.'): name
+  // console.log(getProperty(obj, name.slice(0, -2)), name)
   return obj.updateIn(name, (x) => {
     let n = List(x).toJS()
     n.unshift(...value)
@@ -55,6 +59,9 @@ export const splice = function(obj, name, i, num, data) {
   })
   // obj.splice(['0', ...name.split('.')], value)
 }
+export const last = function() {
+
+};
 export const supSplice = function (obj, name, i, num, data) {
   name = typeof name === 'string'? name.split('.'): name
   let spliceData;
