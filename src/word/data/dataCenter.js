@@ -294,16 +294,19 @@ export default function dataCenter(data, vm, eventBind) {
         // console.log(spliceData, path, 'merge.t')
         data = dataV2['data'];
         let spliceStr = spliceData[0]['t_txt'];
-        last['t_txt']+= spliceStr;
+        console.log(spliceStr, 'spliceStr')
+        last['t_txt']+= (isSpaceTxt(spliceStr) ? '': spliceStr);
         isMerge = true;
       }
       return {data, isMerge};
     },
     // 用于补全编辑 接受一个多余的需要补全的编辑对象supplement，超出的宽度overW，补全的相对位置
     ['auto.space']({data, doc, lineRelativeI, overW, surplusNum, supplement}) {
+
       console.log( data.getIn(['m', 0, 'm', 0, 'm']).length)
       // console.log(surplusNum, supplement, 'supplement')
       let _merge = (originData, path, merge) => {
+        console.log(JSON.parse(JSON.stringify(merge)), '.zhiduiziji')
         options['txt.patch']({data: originData, supplement: merge, path})
         // 合并处理 他说处理merge
         let txtMerge = options['txt.merge']({data: originData, supplement: merge, path});
@@ -375,12 +378,14 @@ export default function dataCenter(data, vm, eventBind) {
       // return data;
       // let endStr;
       // let endLineNodePath;
+      data = options['edit']({undefined, doc, data})['data'];
+
       let spliceSec = [];
       // 当前段落序号
       let lineRelativeI = doc.place.lineRelativeI;
       let overChunks = over['overChunks'];
 
-
+      console.log(overChunks, 'overChunks')
       // // // 当前段落路径
       // let lineAbsolutePath = doc.place.lineAbsolutePath;
       // // // 当前要处理的节点下标
@@ -389,11 +394,11 @@ export default function dataCenter(data, vm, eventBind) {
 
 
       // >>>>>>>>>>>>>
-      console.time('start')
+      // console.time('start')
       // 最后超出宽度
       let overW = over['lastOverW'];
       let surplusNum = getProperty(data, doc.place.bpAbsolutePath+'.m').length- 1- doc.place.lineRelativeI;
-      console.log(surplusNum, overChunks, 'Y');
+      // console.log(surplusNum, overChunks, 'Y');
       let lineLocation = doc.getLineLocation();
       // 相对于在当前处理行的超出节点序号
       let ONI_IN_CURRLINE;
@@ -402,11 +407,23 @@ export default function dataCenter(data, vm, eventBind) {
       // 需要处理的node绝对路径
       let disposeNodeAbsolutePath;
       // 需要处理的line绝对路径
-      let disposeLineAbsolutePath;
+      let disposeLineAbsolutePath
+      let flexibleCursor = (overChunk, originOffsetStart) => {
+        console.log(originOffsetStart);
+        // let offsetStart = 0;
+        for(let ci= 0; ci< overChunk['chunk'].length; ci++) {
+          let chunk = overChunk['chunk'][ci];
+          let lastChunk = overChunk['chunk'][ci+ 1];
+          if((lastChunk&&lastChunk['startI'] > originOffsetStart) || !lastChunk) {
+            return { start: originOffsetStart- chunk['startI'], i: ci}
+          }
+        }
+      }
+
       // ['txt.merge']({data, supplement, path})
-      console.time('care')
+     // console.time('care')
       for(let i = 0; i< overChunks.length; i++) {
-        console.log('xuhanddd')
+        // console.log('xuhanddd')
         let overChunk = overChunks[i];
         let chunk = overChunk['chunk'];
         let node = overChunk['node'];
@@ -432,17 +449,30 @@ export default function dataCenter(data, vm, eventBind) {
           data = dataV2['data'];
           // console.log(dataV2['spliceData'][0].t_txt, 't')
         }
+        // 处理code
+
         let nodeData = getProperty(data, disposeNodeAbsolutePath);
+        console.log(disposeLineAbsolutePath, 'dispose', nodeData)
         let patchCode = nodeData['patchCode'];
         let code = patchCode === '' ? randomString(9): patchCode;
-
+        let needDelNode = {
+          disposeLineAbsolutePath: '',
+          ONI_IN_CURRLINE: '',
+          is: false
+        }
         chunk.map(ck => {
-         // console.log(ck.str, 'ck')
-          // 不是换行
-          // let node = getProperty(data, disposeNodeAbsolutePath);
-          // if()
           if(!ck['switchLine']) {
-            // let node = getProperty(data, disposeNodeAbsolutePath)
+            if(ck.str === '') {
+              console.log(ck, 'ck...')
+              needDelNode = {
+                disposeLineAbsolutePath,
+                ONI_IN_CURRLINE,
+                is: true
+              }
+              // 等待
+              // data = splice(data, disposeLineAbsolutePath, ONI_IN_CURRLINE, 1)
+            }
+
             // 设置文本
             data = setProperty(
               data,
@@ -453,15 +483,7 @@ export default function dataCenter(data, vm, eventBind) {
               data,
               disposeNodeAbsolutePath+'.patchCode',
               code);
-            // if(node['patchCode']==='') {
-            //   data = setProperty(
-            //     data,
-            //     disposeNodeAbsolutePath+'.patchCode',
-            //     code);
-            // }else {
-            //   code = node['patchCode'];
-            // }
-            // console.log(ck, disposeNodeAbsolutePath, ck.str)
+
           }else {
             let bp = getProperty(data, doc.place.bpAbsolutePath);
             let bpTxt = getProperty(data, disposeNodeAbsolutePath);
@@ -469,8 +491,6 @@ export default function dataCenter(data, vm, eventBind) {
             conf = {bp: {...bp['bpStyle']}, bpTxt: {...bpTxt['s']}};
             // 要新添加行，++切换
             lineRelativeI++;
-            // console.log('addCode', code)
-
             data = options['insert.line']({
               data,
               path: doc.getLineLocation(),
@@ -478,19 +498,25 @@ export default function dataCenter(data, vm, eventBind) {
               bpAbsolutePath: doc.place.bpAbsolutePath,
               txt: ck.str,
               conf, patchCode: code})
-            // console.log('push', data.getIn(['m', 0, 'm', 0, 'm']).length)
           }
         })
+        // console.log(data.getIn(['m', 0, 'm', 0]))
+        if(needDelNode.is) {
+          console.log(needDelNode, 'needDelNode')
+          console.log(data.getIn([...needDelNode.disposeLineAbsolutePath.split('.'), 'm', needDelNode.ONI_IN_CURRLINE]))
+          data = splice(data, needDelNode.disposeLineAbsolutePath+'.m', needDelNode.ONI_IN_CURRLINE, 1)
+        }
         // 把删除的补上
         if(spliceNum> 0) {
           spliceSec = dataV2['spliceData'];
-            console.log(spliceSec, lineRelativeI, lineLocation)
-            if(spliceSec.length) {
-              data = push(data, `${lineLocation}.${lineRelativeI}.m`, ...spliceSec);
-            };
+          if(spliceSec.length) {
+            data = push(data, `${lineLocation}.${lineRelativeI}.m`, ...spliceSec);
+          };
         }
+
+
       }
-      console.timeEnd('care')
+      // console.timeEnd('care')
       if(surplusNum>0) {
         let spliceDataV2 = supSplice(data, doc.getLineLocation(), lineRelativeI, 1);
         data = spliceDataV2['data'];
@@ -498,107 +524,25 @@ export default function dataCenter(data, vm, eventBind) {
         // alert(supplement[0].t_txt)
         data = options['auto.space']({data, doc, lineRelativeI, supplement, overW, surplusNum})
       }
-      console.timeEnd('start')
+     // console.timeEnd('start')
       // <<<<<<<<<<<<<
-
-
-
-
-
-
-      // for(let i= 0;i< overChunks.length;i++) {
-      //   // 获取超出的宽度
-      //   if(i === overChunks.length-1) {
-      //     let oc = overChunks[i];
-      //     let fontRXArr = oc['fontRXArr'];
-      //     let lastArr = _last(fontRXArr);
-      //     overW = +_last(_last(lastArr)['rcArr'])- (+oc['relativeRectX'])
-      //   }
-      //   let overChunk = overChunks[i];
-      //   let prevChunk = overChunks[i-1];
-      //   let overNode = overChunk['node'];
-      //   let prevNode = prevChunk&&prevChunk['node'];
-      //   // 超出的node序号 当前的超出
-      //   editNodeRelativeI = i=== prevNode ?
-      //     +overNode.dataset.index - (+prevNode.dataset.index):
-      //     +overNode.dataset.index;
-      //   let editNodeAbsolutePath = `${doc.getLineLocation()}.${lineRelativeI}.m.${editNodeRelativeI}`;
-      //   // 配置
-      //   let bp = getProperty(data, doc.place.bpAbsolutePath)
-      //   let bpTxt = getProperty(data, editNodeAbsolutePath)
-      //   // let h = bp['h']
-      //   // 配置
-      //   conf = {bp: {...bp['bpStyle']}, bpTxt: {...bpTxt['s']}};
-      //   let patchCode = bpTxt['patchCode'];
-      //   let overChunkC = overChunk['chunk'];
-      //   let firstChunk = overChunkC.shift();
-      //   if(!nowrap) {
-      //     // 把后面的移除
-      //     let dataV2 = supSplice(
-      //       data,
-      //       lineAbsolutePath+ '.m',
-      //       editNodeRelativeI+1,
-      //       +doc.getLineNodeNum()
-      //     )
-      //     spliceSec = dataV2['spliceData'];
-      //     data = dataV2['data'];
-      //     data = setProperty(
-      //       data,
-      //       editNodeAbsolutePath+ '.t_txt',
-      //       firstChunk.str);
-      //
-      //     overChunkC.map((over, i) => {
-      //       data = options['insert.line']({
-      //         data,
-      //         path: doc.getLineLocation(),
-      //         index: lineRelativeI+1+i,
-      //         bpAbsolutePath: doc.place.bpAbsolutePath,
-      //         txt: over.str,
-      //         conf, patchCode})
-      //     })
-      //
-      //     // 最后的node路径
-      //     lineRelativeI = overChunkC.length+ lineRelativeI;
-      //     // 获取分行最后哪一个段落路径
-      //     endLineNodePath = `${doc.getLineLocation()}.${lineRelativeI}`;
-      //     if(spliceSec.length) {
-      //       data = push(data, endLineNodePath+'.m', ...spliceSec)
-      //     }
-      //   }else {
-      //     throw new Error('!')
-      //     data = setProperty(
-      //       data,
-      //       editNodeAbsolutePath+ '.t_txt',
-      //       firstChunk.str)
-      //   }
-      // }
-      // // 遍历结束 拿到两个东西
-      // // endLineNode 分行后的那个绝对位置
-      // // lineRelativeI 分行后的那个相对位置
-      // if(surplusNum>0) {
-      //
-      //   let spliceDataV2 = supSplice(data, doc.getLineLocation(), lineRelativeI, 1);
-      //   data = spliceDataV2['data'];
-      //   let supplement = spliceDataV2['spliceData'][0]['m'];
-      //   // console.log(lineRelativeI, supplement, '.666..')
-      //   // lineRelativeI, overW, surplusNum, supplement
-      //   data = options['auto.space']({data, doc, lineRelativeI, supplement, overW, surplusNum})
-      // }
-
       // 光标定位处理
       // 第一次段落分行后的下标
+      // let
       lineRelativeI = overChunks[0]['chunk'].length+ doc.place.lineRelativeI;
       // 第一次段落分行后的行路径
       let endLineNodePath = `${doc.getLineLocation()}.${lineRelativeI}.m.0`;
       // console.log(lineRelativeI, endLineNodePath);
-      let firstOverChunks = overChunks[0]['chunk']
-      let lastOverChunk = firstOverChunks[firstOverChunks.length-1];
-      let start = doc.range.startOffset- (lastOverChunk['i']+1);
-      let isSame = doc.range.editNodeAbsolutePath === lastOverChunk['node'].dataset.id;
+      // 表示当前编辑的node被分行了
+      let cursor = { change: false, start: 0, i: 0} ;
+      if(over.eq(0).nodeI === 0) {
+        cursor = { change: true, ...flexibleCursor(over.eq(0), doc.startOffset)} ;
+      }
       return {
         data,
-        endBpNodePath: !isSame||start<0? doc.range.editNodeAbsolutePath: endLineNodePath,
-        start: !isSame||start<0? doc.range.startOffset: start}
+        changeCursor: cursor['change'],
+        nodePath: `${doc.getLineLocation()}.${doc.place.lineRelativeI+ cursor['i']}.m.0`,
+        start: cursor['start']}
     },
     // 插入一行
     ['insert.line']({data, path, txt, conf, index, patchCode}) {
@@ -631,7 +575,7 @@ export default function dataCenter(data, vm, eventBind) {
         customDoc.lineNodeNum
       )
 
-      console.log(sliceIntercept, 'sliceIntercept', customDoc, getProperty(data, customDoc.lineAbsolutePath+'.m'))
+      // console.log(sliceIntercept, 'sliceIntercept', customDoc, getProperty(data, customDoc.lineAbsolutePath+'.m'))
       sliceIntercept[0].t_txt = customDoc.interceptTxt
       // -----------------
       // 如果当前行开头存在莫名的空格，将其移除
@@ -641,10 +585,12 @@ export default function dataCenter(data, vm, eventBind) {
           return true
         }
       })
+
       // 设置当前行保留下来的数据
       let sliceRetains = sliceMutable(data, customDoc.lineAbsolutePath+'.m', 0, customDoc.editNodeRelativeI+1);
-      sliceRetains[sliceRetains.length-1].t_txt = customDoc.retainsTxt
-      data = setProperty(data, customDoc.lineAbsolutePath+'.m', sliceRetains)
+
+      sliceRetains[sliceRetains.length-1].t_txt = customDoc.retainsTxt;
+      data = setProperty(data, customDoc.lineAbsolutePath+'.m', sliceRetains);
       // m.?.m
       // 切割完了之后
       sliceRetains.map((s) => {
@@ -663,6 +609,7 @@ export default function dataCenter(data, vm, eventBind) {
       let nodeRelativeI = doc.range.editNodeRelativeI;
       let startOffset = doc.range.startOffset;
       let overW = +_lineRect['lastRectX']- _oneFontRXArr[nodeRelativeI]['rcArr'][startOffset];
+      console.log(overW, 'overW')
       // 切割完了之后
       // console.log(doc.place, 'place', doc.range)
       let slice = options['splice.line']({doc, data,
@@ -679,13 +626,14 @@ export default function dataCenter(data, vm, eventBind) {
         retainsTxt: doc.getRetainsTxt()
         }})
       let supplement = slice['sliceIntercept'];
+      // console.log(supplement[0].t_txt, 'suple')
       data = slice['data'];
       let surplusNum = getProperty(data, doc.place.bpAbsolutePath+'.m').length- 1- doc.place.lineRelativeI
       let newBp = normalBp(conf)
-      if(surplusNum>0) {
-        // console.log(overW, supplement, surplusNum, doc.place.lineRelativeI+1)
-        data = options['auto.space']({data, doc, lineRelativeI: doc.place.lineRelativeI+1, supplement, overW, surplusNum});
 
+      if(surplusNum>0) {
+        // console.log(overW, JSON.parse(JSON.stringify(supplement)), surplusNum, doc.place.lineRelativeI+1)
+        data = options['auto.space']({data, doc, lineRelativeI: doc.place.lineRelativeI+1, supplement, overW, surplusNum});
         let dataV2 = supSplice(data, doc.getLineLocation(), doc.place.lineRelativeI+1, surplusNum+1);
         data = dataV2['data'];
         let spliceData = dataV2['spliceData'];

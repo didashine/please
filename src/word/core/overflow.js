@@ -13,7 +13,6 @@ export function calcLineRect(relativeNode, overNodes) {
    let range = new Range();
    for(let nodeI = 0;nodeI< overNodes.length; nodeI++) {
      let overNode = overNodes[nodeI];
-     // console.log(overNode, 'overNode')
      let txtNode = overNode.childNodes[0];
      if(txtNode === undefined) break;
      let txt = txtNode.textContent;
@@ -73,7 +72,6 @@ export function calcLineRect(relativeNode, overNodes) {
            interceptTxt = interceptTxt.trim() === '' ? '\u00A0': interceptTxt;
            let retainsTxt = txt.substr(0, i);
            retainsTxt = retainsTxt.trim() === '' ? '\u00A0': retainsTxt;
-           // console.log(relativeRectX, 'relativeRectX', lastRectX, totalW)
            //let startOffset = i =0
            //if(lastRectX- rectX+ 630 === (630-totalW)+ 630) {
              console.log('%c%s', 'color: white;background: green;', lastRectX- rectX, i, interceptTxt)
@@ -105,7 +103,7 @@ export function calcLineRect(relativeNode, overNodes) {
    }
 }
 export let overflow = (relativeNode, overNodes, max) => {
-  console.time('calcOver');
+ //  console.time('calcOver');
   let overChunks = [];
   let range = new Range();
   let relativeRect = relativeNode.getBoundingClientRect();
@@ -131,10 +129,8 @@ export let overflow = (relativeNode, overNodes, max) => {
       range.setStart(txtNode, i);
       range.setEnd(txtNode, i);
       let rect = range.getBoundingClientRect();
-      // console.log(i, rect.left, 'rectx', range.getBoundingClientRect())
       rxArr.push(rect.left)
       // 换行模式
-      // console.log(rect.left-relativeRect.left, relativeRect.left)
       if(rect.left- relativeRect.left<=0) {
         // 开辟一个记录字位置的数组
         // 表示换行模式下换行了
@@ -145,6 +141,8 @@ export let overflow = (relativeNode, overNodes, max) => {
           let currChunk = chunk[chunk.length-1];
           if(currChunk) {
             currChunk.str = txt.substring(currChunk.i+1, i);
+          }else {
+
           }
           // rxs = []
           chunk.push({
@@ -158,7 +156,6 @@ export let overflow = (relativeNode, overNodes, max) => {
         }
       }
       let lastFontArr = _last(FONT_RECT_X_ARR);
-      // console.log(pushFonter, '...', pushFonter&&pushFonter[pushFonter.length-1])
       // debugger;
       lastFontArr&&
       (_last(lastFontArr)['rcArr']).push(rect.left);
@@ -197,7 +194,8 @@ export let overflow = (relativeNode, overNodes, max) => {
         originStr: txt,
         fontRXArr: FONT_RECT_X_ARR,
         relativeRectX: relativeRect.left,
-        chunk
+        chunk,
+        originI: nodeI
       }
       // overChunks.push(chunk);
       overChunks.push(chunkC)
@@ -205,23 +203,20 @@ export let overflow = (relativeNode, overNodes, max) => {
 
   }
   //console.log(overChunks, 'chunkC')
-  console.timeEnd('calcOver');
+  // console.timeEnd('calcOver');
   return { overChunks, isOver: !!overChunks.length }
 }
 
 export let _overflow = (relativeNode, overNodes, max) => {
-  console.time('calcOver');
+  // console.time('calcOver');
   let overChunks = [];
   let range = new Range();
   let relativeRect = relativeNode.getBoundingClientRect();
-  let relativeRx = relativeRect.left;
+  // let relativeRx = relativeRect.left;
   let FONT_RECT_X_ARR = [];
-  console.log(overNodes, 'nodes')
   for(let nodeI = 0;nodeI< overNodes.length; nodeI++) {
-
     let overNode = overNodes[nodeI];
     let txtNode = overNode.childNodes[0];
-    console.log(overNode, '.....node');
     if(txtNode === undefined) break;
     let txt = txtNode.textContent;
     let lastFontArr = _last(FONT_RECT_X_ARR);
@@ -248,26 +243,35 @@ export let _overflow = (relativeNode, overNodes, max) => {
         FONT_RECT_X_ARR.push([{node: overNode, rcArr: []}]);
         // nodeI>0||i-1> 0
         // if(!overChunks.length&&nodeI>0) { first = true;}
-        // if(nodeI>0||i-1> 0) {
+        if(nodeI>0||i-1> 0) {
           let currChunk = chunk[chunk.length-1];
           if(currChunk) {
             currChunk.str = txt.substring(currChunk.i+1, i);
           }else {
+            console.log('通过')
             let str = txt.substring(0, i);
             if(str!== '') {
-              // console.log('....', 'push')
               // 推入没有换行的
-              chunk.push({
-                typewriting: true,
-                str,
-                originStr: txt,
-                node: overNode,
-                originI: nodeI,
-                switchLine: false
-              })
+              // chunk.push({
+              //   typewriting: true,
+              //   str,
+              //   originStr: txt,
+              //   node: overNode,
+              //   originI: nodeI,
+              //   switchLine: false
+              // })
             }
+            chunk.push({
+              typewriting: true,
+              str,
+              originStr: txt,
+              node: overNode,
+              nodeI: nodeI,
+              switchLine: false,
+              startI: i
+            })
           }
-          console.log(overNode.textContent, 'youmeioyu')
+
           // rxs = []
           chunk.push({
             typewriting: true,
@@ -276,13 +280,13 @@ export let _overflow = (relativeNode, overNodes, max) => {
             str: txt.substring(i, txt['length']),
             originStr: txt,
             node: overNode,
-            originI: nodeI
+            nodeI: nodeI,
+            startI: i
           });
           // console.log(i, chunk, 'hhh')
-        // }
+        }
       }
       let lastFontArr = _last(FONT_RECT_X_ARR);
-      // console.log(pushFonter, '...', pushFonter&&pushFonter[pushFonter.length-1])
       // debugger;
       lastFontArr&&
       (_last(lastFontArr)['rcArr']).push(rect.left);
@@ -305,40 +309,38 @@ export let _overflow = (relativeNode, overNodes, max) => {
     }
     // 置空
     // rxArr = [];
-    console.log(chunk, 'chunk', overNodes)
     if(chunk.length) {
       chunkC = {
         node: overNode,
         originStr: txt,
         fontRXArr: FONT_RECT_X_ARR,
         relativeRectX: relativeRect.left,
-        chunk
+        chunk,
+        nodeI: nodeI
       }
       // overChunks.push(chunk);
       overChunks.push(chunkC)
     }
-
   }
-
-  console.log(overChunks, 'chunkC')
-  console.timeEnd('calcOver');
+  // console.timeEnd('calcOver');
   // return overChunks;
   return {
     overChunks,
+    eq: function(i) {
+      return overChunks[i];
+    },
     isOver: (function(){
-      // console.log('over', overChunks)
-      if(overChunks.length<=0) return false;
-      if(overChunks.length=== 1) {
-        let overChunk = overChunks[0];
-        let chunk = overChunk['chunk'];
-        if(chunk.length === 1) {
-          // console.log(chunk, '..dasd')
-          return chunk[0]['switchLine'];
-        }
-        // console.log(overChunks[0]['chunk'], 'j')
-        return true;
-      }
-      return true;
+      // if(overChunks.length<=0) return false;
+      // if(overChunks.length=== 1) {
+      //   let overChunk = overChunks[0];
+      //   let chunk = overChunk['chunk'];
+      //   if(chunk.length === 2) {
+      //     return !chunk[0]['switchLine']&&chunk[1]['switchLine'];
+      //   }
+      //   return true;
+      // }
+      // return true;
+      return overChunks.length;
     }()),
     lastOverW: (function() {
       if(overChunks.length) {

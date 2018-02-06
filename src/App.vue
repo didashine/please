@@ -171,6 +171,7 @@
         // .......
         on('save', (data) => {
           console.time('save')
+          console.log(data.getIn(['m', 0, 'm', 0, 'm', 0, 'm']))
           setStore('worderData', data.toJS())
           console.timeEnd('save')
         })
@@ -311,25 +312,7 @@
         // 全局编辑输入事件
         let inputDebounce = debounce(
           (e) => {
-          console.log('hh')
-            doc.updateDoc(e)
-            //  状态为输入法状态，并且为spellStatus为普通状态
-//            if(e.inputType === 'insertCompositionText'
-//              &&doc.spellStatus === 'originWriting') {
-//              doc.setSpellStatus('typeWriting')
-//              return;
-//            }
-//            // 状态为输入法状态，并且为spellStatus为输入状态
-//            if(e.inputType === 'insertCompositionText'
-//              &&doc.spellStatus === 'typeWriting') {
-//              return;
-//            }
-//            // 状态为输入法结束状态
-//            if(doc.spellStatus === 'typeWritingEnd') {
-//              doc.setSpellStatus('originWriting')
-//            }
-            let bpNode = doc.place.bpNode
-
+            // let bpNode = doc.place.bpNode
             dc.commit('edit', {
               e,
               doc,
@@ -344,9 +327,10 @@
               // trigger('beautifyPage', this.worder, doc)
             })
 
-          }, 80, true)
+          }, 100, true)
 
         on(word, 'input', (e, flag) => {
+          //
 
           doc.updateDoc(e)
 
@@ -354,11 +338,11 @@
           // 是拼音输入
           // 兼容问题除了chrome好像都没这个值
           // this.autoHeight = true;
+
           if(e.inputType === 'insertCompositionText'
             &&doc.spellStatus === 'originWriting') {
             doc.setSpellStatus('typeWriting')
             // this.nowrap = false
-
           }
           // 状态为输入法状态，并且为spellStatus为输入状态
           if(e.inputType === 'insertCompositionText'
@@ -373,7 +357,9 @@
             doc.setSpellStatus('originWriting')
             // console.log(nextNodes(editNode), 'node')
          }
-         console.time('c')
+
+
+         // console.time('c')
             let over = _overflow(
               editNode.parentNode,
               [editNode, ...nextNodes(editNode)],
@@ -393,15 +379,19 @@
                   this.$forceUpdate()
                   console.timeEnd('c')
                 }).nextTick((u) => {
-
-                // 这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
-//                let node = document.getElementsByClassName(u.endBpNodePath)[0]
-//                let selection = window.getSelection()
-//                selection.removeAllRanges(doc.range.r)
-//                let r = range(node, u.start, u.start)
-//                setTimeout(() => {
-//                  selection.addRange(r)
-//                }, 0)
+//                changeCursor: cursor['change'],
+//                  nodePath: `${doc.getLineLocation()}.${doc.place.lineRelativeI+ cursor['i']}.m.0`,
+//                  start:
+                //  这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
+                if(u['changeCursor']) {
+                  let node = document.getElementsByClassName(u.nodePath)[0]
+                  let selection = window.getSelection()
+                  selection.removeAllRanges(doc.range.r)
+                  let r = range(node, u.start, u.start)
+                  setTimeout(() => {
+                    selection.addRange(r)
+                  }, 0)
+                }
 //                trigger('beautifyPage', this.worder, doc)
               })
               return void 0;
