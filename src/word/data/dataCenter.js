@@ -1,6 +1,6 @@
 import timeTraveler from '../until/timeTraveler'
 import {newRow, edit, deleted, uStyle} from '../core/edit'
-import {splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
+import { splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
 import {normalBp, normalTb,aloneBp, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode, byClass} from "../until/dom";
 import {spliceMap, randomString, deepClone, _last} from '../until/until';
@@ -61,6 +61,7 @@ export default function dataCenter(data, vm, eventBind) {
 
     commit(commit, payload, exectedFn) {
       uid = randomString(18)
+
       let exec = {
         executed: exectedFn,
         afterExec: null
@@ -72,14 +73,21 @@ export default function dataCenter(data, vm, eventBind) {
             data: false
           }
         }
-        return rs['data'] ? rs: {data: rs}
+        if (rs && rs['data']) {
+          return rs;
+        }
+        return {data: rs}
       }
+
+      // 目前啥都没做
       options['_beforeExec'](commit)
+
       if(options[commit]) {
         v = execReturn(options[commit].call(vm, payload))
       }else {
         throw new Error(`没有找到对应commit[${commit}]`)
       }
+
       let api = {
         _exec() {
           options['_executed'](commit, v)
@@ -300,35 +308,33 @@ export default function dataCenter(data, vm, eventBind) {
       }
       return {data, isMerge};
     },
-    // 用于补全编辑 接受一个多余的需要补全的编辑对象supplement，超出的宽度overW，补全的相对位置
+    /**
+     * @description 用于补全编辑 接受一个多余的需要补全的编辑对象supplement，超出的宽度overW，补全的相对位置
+     * @param {immutable} data 行刚切割完还未递归到下一行填充的数据
+     * @param {*} doc doc类
+     * @param {*} lineRelativeI 当前段落的第几行 lineRelativeI + 1
+     * @param {*} overW 上一行被被截下来的宽度
+     * @param {*} surplusNum bp内被截断行下面剩余行的数量
+     * @param {*} supplement 被截掉的txt
+     */
     ['auto.space']({data, doc, lineRelativeI, overW, surplusNum, supplement}) {
-
-      console.log( data.getIn(['m', 0, 'm', 0, 'm']).length)
       // console.log(surplusNum, supplement, 'supplement')
       let _merge = (originData, path, merge) => {
-        console.log(JSON.parse(JSON.stringify(merge)), '.zhiduiziji')
         options['txt.patch']({data: originData, supplement: merge, path})
         // 合并处理 他说处理merge
         let txtMerge = options['txt.merge']({data: originData, supplement: merge, path});
         originData = txtMerge['data'];
         let txtIsMerge = txtMerge['isMerge'];
 
-        // console.time('merge')
-        // console._log({ lineD: originData.getIn(['m', 0, 'm', 0, 'm']), merge})
-        // console.timeEnd('merge')
-        // console.log('_merge', originData.getIn(['m', 0, 'm', 0, 'm']), merge)
         return { txtIsMerge, data: unshift(originData, path, ...merge)};
       };
       // 拿到需要换算的下一行数据
       let lineLocation = doc.getLineLocation();
-      let nextLineRelativeI = doc.place.lineRelativeI+1;
       let needNew = false;
-      // console.time('zhe')
-      for(let i = 0; i< surplusNum; i++, nextLineRelativeI++, lineRelativeI++) {
-        // >>>>>>>>>>>
-        let nextLineClass = lineLocation+ "."+nextLineRelativeI;
+      for(let i = 0; i< surplusNum; i++, lineRelativeI++) {
+        let nextLineClass = lineLocation+ "."+lineRelativeI;
+        // 未被将上一行截断内容合并的那一行再下一行的行节点
         let lineNode = document.getElementsByClassName(nextLineClass)[0];
-        // console.time('sunhao')
         let chunkC = calcLineRect(lineNode, [...lineNode.childNodes]);
         let over = chunkC['over'](630- overW);
         let slice;
@@ -349,19 +355,15 @@ export default function dataCenter(data, vm, eventBind) {
             }})
           data = slice['data'];
         }
-        // <<<<<<<<<<<
-        // 合并
-        // >>>>>>>>>>>.
+
+        // 把上一行等宽的后半内容截掉后将上一行截下的与这一行保留的相拼接
         let mergeData = _merge(data, lineLocation+'.'+lineRelativeI+ '.m', supplement)
-        //console.timeEnd('merge')
         data = mergeData['data'];
         if(!over['over']) break;
         supplement = slice['sliceIntercept'];
         if(i === surplusNum- 1) { needNew = true};
         overW = over['overW'];
-        // console.log(overW, supplement, 'supplement')
       }
-      // console.timeEnd('zhe')
       if(needNew) {
         data = options['push.line']({
           data,
@@ -374,28 +376,25 @@ export default function dataCenter(data, vm, eventBind) {
       // 下一行数据
 
     },
+    /**
+     *
+     * @param {*} data map数据
+     * @param {*} doc DOC类
+     * @param {*} over
+     * @param {*} conf
+     * @param {*} nowrap
+     */
     ['auto.white.space']({data, doc, over, conf, nowrap = false}) {
-      // return data;
-      // let endStr;
-      // let endLineNodePath;
+      // 输入后，将immutable中的数据进行修改
       data = options['edit']({undefined, doc, data})['data'];
 
       let spliceSec = [];
       // 当前段落序号
       let lineRelativeI = doc.place.lineRelativeI;
+      // 超出的大块内容合集
       let overChunks = over['overChunks'];
 
-      console.log(overChunks, 'overChunks')
-      // // // 当前段落路径
-      // let lineAbsolutePath = doc.place.lineAbsolutePath;
-      // // // 当前要处理的节点下标
-      // let editNodeRelativeI;
-
-
-
-      // >>>>>>>>>>>>>
-      // console.time('start')
-      // 最后超出宽度
+      // 最后一个txt的left
       let overW = over['lastOverW'];
       let surplusNum = getProperty(data, doc.place.bpAbsolutePath+'.m').length- 1- doc.place.lineRelativeI;
       // console.log(surplusNum, overChunks, 'Y');
@@ -409,7 +408,6 @@ export default function dataCenter(data, vm, eventBind) {
       // 需要处理的line绝对路径
       let disposeLineAbsolutePath
       let flexibleCursor = (overChunk, originOffsetStart) => {
-        console.log(originOffsetStart);
         // let offsetStart = 0;
         for(let ci= 0; ci< overChunk['chunk'].length; ci++) {
           let chunk = overChunk['chunk'][ci];
@@ -452,7 +450,6 @@ export default function dataCenter(data, vm, eventBind) {
         // 处理code
 
         let nodeData = getProperty(data, disposeNodeAbsolutePath);
-        console.log(disposeLineAbsolutePath, 'dispose', nodeData)
         let patchCode = nodeData['patchCode'];
         let code = patchCode === '' ? randomString(9): patchCode;
         let needDelNode = {
@@ -563,20 +560,27 @@ export default function dataCenter(data, vm, eventBind) {
       )
       return sliceIntercept
     },
+    /**
+     * @description 行切割函数
+     * @param {*} doc  DOC类
+     * @param {*} data immutable数据
+     * @param {*} customDoc  自定义的一些属性
+     * @returns {sliceIntercept} 行小块中切割掉的txt
+     * @returns {data} 切割后的immutable数据
+     * @returns {sliceRetains} 行小块中保留的txt
+     */
     ['splice.line']({doc, data, customDoc }) {
-      console.log(customDoc)
 
-      // 当前行
-      // 在当前行当前编辑node 表示到新行的数据
+      // 把当前行的光标所在小块和后面小块变成可变的数据结构
       let sliceIntercept = sliceMutable(
         data,
         customDoc.lineAbsolutePath+'.m',
         customDoc.editNodeRelativeI,
         customDoc.lineNodeNum
       )
-
-      // console.log(sliceIntercept, 'sliceIntercept', customDoc, getProperty(data, customDoc.lineAbsolutePath+'.m'))
+      // 在被切割的数据中将被切割行小块的文本内容换成被切掉的那部分
       sliceIntercept[0].t_txt = customDoc.interceptTxt
+
       // -----------------
       // 如果当前行开头存在莫名的空格，将其移除
       spliceMap(sliceIntercept, (b, i) => {
@@ -588,35 +592,42 @@ export default function dataCenter(data, vm, eventBind) {
 
       // 设置当前行保留下来的数据
       let sliceRetains = sliceMutable(data, customDoc.lineAbsolutePath+'.m', 0, customDoc.editNodeRelativeI+1);
-
+      // 在保留下来的数据中将被切割的行小块文本内容换成保留下来的那部分
       sliceRetains[sliceRetains.length-1].t_txt = customDoc.retainsTxt;
+      // 将原本的行小块变成切割之后保留下来的数据
       data = setProperty(data, customDoc.lineAbsolutePath+'.m', sliceRetains);
-      // m.?.m
-      // 切割完了之后
-      sliceRetains.map((s) => {
-        if(s['t_txt'] === '') {
-          // alert('hhhhsdfasdfasjdfkasjdfasjdfasdjfasjdfajdfdsasdfasdf')
-        }
-      })
       return {sliceIntercept, data, sliceRetains}
     },
     ['newRow']({el, doc, data, conf}) {
+      // 例 m.0.m.1.m.1
       let nodeClass = doc.place.lineAbsolutePath;
+
+      // 找到回车前的块元素
       let lineNode = document.getElementsByClassName(nodeClass)[0];
-      // console.log(nodeClass, '...', lineNode.childNodes)
+
+      // 返回一个对象记录了换行前当前行每个文本节点距离左侧的距离,和一个暂不知情的over方法后续补充
       let _lineRect = calcLineRect(lineNode, lineNode.childNodes);
-      let _oneFontRXArr = _lineRect['fontRXArr'][0];
+
+      // ??? _lineRect里有这个属性啊 第一个行块坐标数组
+      let _oneFontRXArr = _lineRect['oneFontRXArr'];
+
+      // 当前光标所在行内小块的dom节点的 data-index
       let nodeRelativeI = doc.range.editNodeRelativeI;
+
+      // 光标起始位置
       let startOffset = doc.range.startOffset;
+
+      // 被截行块 最后一个文字节点距离client左侧距离 - 光标所在文字节点距离左侧距离
+      // 得到第一行后半段被截到下一行的宽度
       let overW = +_lineRect['lastRectX']- _oneFontRXArr[nodeRelativeI]['rcArr'][startOffset];
-      console.log(overW, 'overW')
-      // 切割完了之后
-      // console.log(doc.place, 'place', doc.range)
+      console.log('需要切割的宽度' + overW);
+
+      // 调用行切割方法 返回 sliceIntercept：行小块中切割掉的txt data：切割后的immutable数据 sliceRetains：行小块中保留的txt
       let slice = options['splice.line']({doc, data,
         customDoc: {
-        // 当前行的绝对位置
+        // 当前行的绝对位置 node.dataset.id
         lineAbsolutePath: doc.place.lineAbsolutePath,
-        // 编辑dom的相对位置
+        // 编辑dom的相对位置 parseInt(editTxtNode.parentNode.dataset.index)
         editNodeRelativeI: doc.range.editNodeRelativeI,
         // 行的总子dom数
         lineNodeNum: doc.getLineNodeNum(),
@@ -624,11 +635,15 @@ export default function dataCenter(data, vm, eventBind) {
         interceptTxt: doc.getInterceptTxt(),
         // 保留的文本(超出的那个dom)
         retainsTxt: doc.getRetainsTxt()
-        }})
+        }
+      })
       let supplement = slice['sliceIntercept'];
       // console.log(supplement[0].t_txt, 'suple')
+      // 行刚切割完还未递归到下一行填充的数据
       data = slice['data'];
+      // bp内行的数量 - 当前操作行id = bp内剩余行的数量   大概用于段落内合并
       let surplusNum = getProperty(data, doc.place.bpAbsolutePath+'.m').length- 1- doc.place.lineRelativeI
+      // 新建一个段落
       let newBp = normalBp(conf)
 
       if(surplusNum>0) {
@@ -701,10 +716,12 @@ export default function dataCenter(data, vm, eventBind) {
     },
     //
     ['edit']({el, doc, data}) {
+      // Map结构是不可修改的，任何修稿都要通过setProperty去改变里面数据
       data = setProperty(
         data,
         doc.range.editNodeAbsolutePath+'.t_txt',
         doc.range.editTxtNode.textContent)
+      // 时间记录，用于撤回时使用
       history.record(data)
       return {data}
     },
@@ -718,7 +735,7 @@ export default function dataCenter(data, vm, eventBind) {
         console.warn(
           (commit=== undefined ? '未知处理commit': commit)+'没有正确提交， 数据被私自修改，不是来自commit')
       }
-      console.log('%c%s', 'color: green', '【'+commit+'】'+'commit', psd)
+     //  console.log('%c%s', 'color: green', '【'+commit+'】'+'commit', psd)
       options.update(data)
       return data
     }.bind(vm),
@@ -1031,6 +1048,80 @@ export default function dataCenter(data, vm, eventBind) {
       return trs
     },
 
+    /**
+     *
+     * @param {Number} index 当前页面索引
+     */
+    pageData(index) {
+      // 获取当前页面数据
+      let pageData = getProperty(data,['m', index]);
+
+      // 获取当前page操作区底部相对于浏览器顶部距离
+      let pageDom = document.getElementsByClassName('page')[index];
+      let pageTop = parseInt(pageDom.getBoundingClientRect().top);
+      let pageBottomToTop = pageTop + pageData['paddingTop']+pageData['operateH'];
+
+      // 获取当前page最后一行相对于浏览器顶部距离
+      let pageBp= getProperty(data,['m', index, 'm']);
+      let pageLine = getProperty(data,['m', index, 'm', pageBp.length-1, 'm']);
+      let pageFinalLineClassName = `m.${index}.m.${pageBp.length-1}.m.${pageLine.length-1}`;
+      let pageFinalLineDom = document.getElementsByClassName(pageFinalLineClassName)[0];
+      let pageFinalLineRect = pageFinalLineDom.getBoundingClientRect();
+      let pageFinalLineBottomToTop = parseInt(pageFinalLineRect['top'] + pageFinalLineRect['height']);
+      return {
+        pageBottomToTop,
+        pageFinalLineBottomToTop,
+      }
+    },
+    /**
+     *  @param {*} docPath 当前页面index
+     *  @param {*} doc DOC类
+     *  @param {*} index 递归时候传PageIndex
+     */
+    changePage({docPath, doc, index}) {
+      // 获取总页数
+      let pageDomLength = document.getElementsByClassName('page').length;
+      // 通过当前段落的的bpid拿到当前在第几页
+      let currBp = doc.place.bpAbsolutePath;
+      let currPageIndex = index ? index : currBp.match(/\d+/g)[0];
+      currPageIndex = Number(currPageIndex);
+
+      // 根据第几页获取当前页的数据
+      let currPageData = options.pageData(currPageIndex);
+      let currData = data;
+
+      if (currPageData['pageFinalLineBottomToTop'] >= currPageData['pageBottomToTop']) {
+        // 如果下一页不存在,新建一页并更新数据源
+        if (currPageIndex == pageDomLength - 1) currData = options.newPage(data);
+
+        // 如果超出的最后一行bp只有一行(line),直接将该bp移除  否则移除该bp中的最后一行(line)
+        let pageBp= getProperty(currData,['m', currPageIndex, 'm']);
+        let bpData = getProperty(currData,['m', currPageIndex, 'm', pageBp.length-1, 'm']);
+        if (bpData.length <= 1) {
+          // 将最后一个bp从当前页干掉
+          let currBpData = getProperty(currData, ['m', currPageIndex, 'm']).pop();
+          getProperty(currData,['m', currPageIndex+1, 'm']).unshift(currBpData);
+          options.update(currData);
+          let bool = options['changePage']({docPath, doc, index: currPageIndex });
+          if (bool) {
+            options['changePage']({docPath, doc, index: currPageIndex + 1 })
+          }
+        } else {
+          // 超出的行在一个包含多行的bp内情况下,拿到bp内最后一个行对象 {m:arr,t:'line'}
+          let currBpLineData = bpData.pop();
+          let newBp = normalBp(NORMAL_CONFIG);
+          newBp['m'].unshift(currBpLineData);
+          getProperty(currData,['m', currPageIndex+1, 'm']).unshift(newBp);
+          options['changePage']({docPath, doc, index: currPageIndex+1 });
+          let bool = options['changePage']({docPath, doc, index: currPageIndex });
+          if (bool) {
+            options['changePage']({docPath, doc, index: currPageIndex + 1 })
+          }
+        }
+      } else {
+        return true;
+      }
+    },
     // 错误做法
     ['autoBeautifyPage']: function({down, support, isMerge, doc}) {
       let data = this.worder

@@ -44,7 +44,6 @@
     let dc;
     let delay = 200
     let api = {
-      //
       dc(vm) {
         return dc.bind(vm)
       },
@@ -59,9 +58,13 @@
         let offsetT = getOffset(wordWrap, 'top')
         wordWrap.style.height = documentH - offsetT+ 'px'
       },
-      updateToolbar (name, bI) {
+      /**
+       * @param {*} name place.lineAbsolutePath, 具体的节点(m.0m.1m.2)
+       * @param {*} bI range.editNodeRelativeI    鬼知道是什么位置,找jfs
+       */
+      updateToolbar(name, bI) {
         let bp = dc.getData(this.worder, name)
-
+        // console.log(this.worder, name.split('.'), bp)
         let conf = {
           bpTxt: {...bp['m'][bI]['s']},
           bp: {...bp['bpStyle']}
@@ -89,71 +92,7 @@
         let on = eventBind.on.bind(this)
         // 事件触发器
         let trigger = eventBind.trigger
-        // 渲染完后设置高度
-        this.$nextTick(() => {
-         //  dc.commit('setH', {data: this.worder})
-
-          // dc.setH(this.worder)
-        })
         this.setWordH()
-        // doc更新方法
-//        let updateDoc = (e) => {
-//          // 是否是dom
-//          let isHTMLElement = (e) => {
-//            return (e instanceof HTMLElement)
-//          }
-//          // 更新工具栏
-//          let updateToolbar = (name, bI) => {
-//            let bp = dc.getData(this.worder, name)
-//            let conf = {
-//              bpTxt: {...bp['m'][bI]['s']},
-//              bp: {...bp}
-//            }
-//            let toolBar = this.$refs['toolBar']
-//            toolBar.setValue(conf)
-//          }
-//          let r = ranges()
-//          // 表示选中了多个部分
-//          if(!r.collapsed) {
-//            let isInSameBp = (startNode, endNode) => {
-//              return startNode.parentNode == endNode.parentNode
-//            }
-//            let startNode = r.startContainer.parentNode
-//            let endNode = r.endContainer.parentNode
-//            if(isInSameBp(startNode, endNode)) {
-//                let chunkDoc = {}
-//                let node = startNode.parentNode
-//                // console.log(node, 'nodeNum', r.startContainer)
-//                let startIndex = r.startContainer.parentNode.dataset.index
-//                let endIndex = r.endContainer.parentNode.dataset.index
-//
-//                chunkDoc = {
-//                  area: [parseInt(startIndex), parseInt(endIndex)],
-//                  els: [r.startContainer, r.endContainer]
-//                }
-//                doc.updateStruture(node, r.startOffset, r, chunkDoc)
-//              return
-//              }else {
-//              throw new Error('不通过，我们不一样')
-//            }
-//
-//          }
-//          // 更新toolbar
-//          // doc设定当前编辑bp部分
-//          let editNode  = r.commonAncestorContainer.parentNode
-//          let editBp = editNode.parentNode
-//          if(!isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
-//            if(hasClass(editBp, 'bp_txt')) {
-//              doc.updateStruture(editBp, r.startOffset, r, e)
-//              updateToolbar(doc.place.bpAbsolutePath, doc.range.editNodeRelativeI)
-//            }else {
-//              throw new Error('没选择')
-//            }
-//          }
-//          if(isHTMLElement(e)) {
-//            doc.updateStruture(e, r.startOffset, r)
-//          }
-//        }
         on('command+z', debounce((e) => {
          // this.worder = dc.Undo()
           let d = dc.Undo()
@@ -170,10 +109,10 @@
         })
         // .......
         on('save', (data) => {
-          console.time('save')
-          console.log(data.getIn(['m', 0, 'm', 0, 'm', 0, 'm']))
+          // console.time('save')
+         //  console.log(data.getIn(['m', 0, 'm', 0, 'm', 0, 'm']))
           setStore('worderData', data.toJS())
-          console.timeEnd('save')
+          // console.timeEnd('save')
         })
         on('setH', (data, {node, path}) => {
           if(hasClass(node, 'word_bp')&&hasClass(node, 'bp_format')) {
@@ -210,21 +149,22 @@
             dc.commit('setTableH', {data, el:node, path})
           }
         })
-        on('beautifyPage', function(data, doc, down = true) {
-          let docPath = parseInt(doc.place.docPath)
-          dc.commit('autoBeautifyPage',
-            {
-              down,
-              support: {i: docPath},
-              isMerge: true,
-              doc
-            }).nextTick((beautifyPage) => {
-            if(beautifyPage.uEditPlace.is) {
-              let node = document.getElementsByClassName(beautifyPage.uEditPlace.class)[0]
-              let txtNode = getTextNode(node)
-              doc.rangeSet(txtNode, 0, 0, true)
-            }
-          })
+        on('changePage', function(data, doc, down = true) {
+          let docPath = parseInt(doc.place.docPath);
+          dc.commit('changePage', { docPath, doc });
+          // dc.commit('autoBeautifyPage',
+          //   {
+          //     down,
+          //     support: {i: docPath},
+          //     isMerge: true,
+          //     doc
+          //   }).nextTick((beautifyPage) => {
+          //   if(beautifyPage.uEditPlace.is) {
+          //     let node = document.getElementsByClassName(beautifyPage.uEditPlace.class)[0]
+          //     let txtNode = getTextNode(node)
+          //     doc.rangeSet(txtNode, 0, 0, true)
+          //   }
+          // })
         })
         on(word, 'paste', (e) => {
           // console.log('....', e.clipboardData.items, e)
@@ -319,21 +259,22 @@
               data: this.worder
             }, () => {
               this.$forceUpdate()
-            }).nextTick((n) => {
+            })
+            .nextTick((n) => {
               let txtNode = getTextNode(doc.range.editNode)
-              // console.log(txtNode, 'txtNodew')
               doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
 
+              // test
+              trigger('changePage', this.worder, doc)
               // trigger('beautifyPage', this.worder, doc)
             })
 
-          }, 100, true)
+          }, 50, true)
 
         on(word, 'input', (e, flag) => {
-          //
-
+          // 更新doc类内的
           doc.updateDoc(e)
-
+          // 行小块节点
           let editNode = doc.range.editNode
           // 是拼音输入
           // 兼容问题除了chrome好像都没这个值
@@ -350,93 +291,52 @@
             return;
           }
           // 状态为输入法结束状态
-         if(doc.spellStatus === 'typeWritingEnd'||flag) {
-           // this.nowrap = true
-            doc.updateDoc(e)
-            // this.autoHeight = false;
-            doc.setSpellStatus('originWriting')
-            // console.log(nextNodes(editNode), 'node')
-         }
+          if(doc.spellStatus === 'typeWritingEnd'||flag) {
+            // this.nowrap = true
+              doc.updateDoc(e)
+              // this.autoHeight = false;
+              doc.setSpellStatus('originWriting')
+              // console.log(nextNodes(editNode), 'node')
+          }
 
 
-         // console.time('c')
-            let over = _overflow(
-              editNode.parentNode,
-              [editNode, ...nextNodes(editNode)],
-              630)
-            let data = this.worder
+          // console.time('c')
+          let over = _overflow(
+            editNode.parentNode,
+            [editNode, ...nextNodes(editNode)],
+            630)
+          let data = this.worder
           // console.log(over, 'over')
-            if(over['isOver']) {
-            // alert('tiao')
-              dc.commit(
-                'auto.white.space',
-                {
-                  data,
-                  doc,
-                  over,
-                  conf: undefined
-                }, () => {
-                  this.$forceUpdate()
-                  console.timeEnd('c')
-                }).nextTick((u) => {
-//                changeCursor: cursor['change'],
-//                  nodePath: `${doc.getLineLocation()}.${doc.place.lineRelativeI+ cursor['i']}.m.0`,
-//                  start:
-                //  这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
-                if(u['changeCursor']) {
-                  let node = document.getElementsByClassName(u.nodePath)[0]
-                  let selection = window.getSelection()
-                  selection.removeAllRanges(doc.range.r)
-                  let r = range(node, u.start, u.start)
-                  setTimeout(() => {
-                    selection.addRange(r)
-                  }, 0)
-                }
-//                trigger('beautifyPage', this.worder, doc)
-              })
-              return void 0;
-            }
-           // this.nowrap = true
-          //
-           //  this.autoHeight = false;
 
-
-
-
-
-          // >>>>>>>>>>>
-//            let overChunks = overflow(editNode.parentNode, [editNode], 630)
-//            if(overChunks.length>1) {
-////              console.log(overChunks, '....')
-//            }
-          // <<<<<<<<<<<
-//          if(e.inputType !== 'insertCompositionText') {
-//            console.log('触发没')
-//            let data = this.worder
-//            let overChunks = overflow(editNode.parentNode, [editNode], 630)
-//            if(overChunks.length) {
-//              console.log('goch')
-//              dc.commit(
-//                'auto.white.space',
-//                {
-//                  data,
-//                  doc,
-//                  overChunks: overChunks,
-//                  conf: undefined,
-//                  nowrap: true
-//                }, () => {
-//                  console.timeEnd('calc')
-//                }).nextTick((u) => {
-//                let node = document.getElementsByClassName(u.endBpNodePath)[0]
-//                doc.rangeSet(node, 0, 0)
-//              });
-//              return void 0;
-//            }
-//          }
+          if(over['isOver']) {
+          // alert('tiao')
+            dc.commit(
+              'auto.white.space',
+              {
+                data,
+                doc,
+                over,
+                conf: undefined
+              }, () => {
+                this.$forceUpdate()
+                console.timeEnd('c')
+              }
+            ).nextTick((u) => {
+              //  这里应该用统一的接口 doc.rangeSet的但是不知为啥没作用就先这么写
+              if(u['changeCursor']) {
+                let node = document.getElementsByClassName(u.nodePath)[0]
+                let selection = window.getSelection()
+                selection.removeAllRanges(doc.range.r)
+                let r = range(node, u.start, u.start)
+                setTimeout(() => {
+                  selection.addRange(r)
+                }, 0)
+              }
+            })
+            return void 0;
+          }
           inputDebounce(e)
         }
-          //debounce(
-        //, 80, true)
         )
         // enter按下换行
         on('enter.down', (e, data) => {

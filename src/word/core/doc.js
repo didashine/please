@@ -15,7 +15,9 @@ let inTable = (node) => {
 }
 export default class Doc {
   constructor(vm) {
+    // 位置信息,每次编辑更新一次，用于记录点击的位置，在数据模型上的位置->记录在第几页编辑，，记录在第几行编辑
     this.place = null
+    // 要处理的段落
     this.range = null
     // 是否删除到了第一位
     // typeWriting typeWritingEnd originWriting
@@ -50,7 +52,7 @@ export default class Doc {
 
     }
   }
-  当前编辑节点的前面部分文字
+  // 当前编辑节点的前面部分文字
   getRetainsTxt() {
     let txt = this.getTxt()
     let retainsTxt = txt.substr(0, this.startOffset)
@@ -63,7 +65,6 @@ export default class Doc {
     return interceptTxt.trim() === '' ? '\u00A0': interceptTxt
   }
   getTxt() {
-    console.log(this.editTxtNode)
     return this.editTxtNode.textContent
   }
   // 更名
@@ -127,7 +128,9 @@ export default class Doc {
       return (e instanceof HTMLElement)
     }
     let r = ranges()
-    // 表示选中了多个部分
+    // window.getSelection().getRangeAt(0) collapsed 返回一个用于判断 Range 起始位置和终止位置是否相同的布尔值。
+    // false: 表示选中了多个部分
+    // https://developer.mozilla.org/zh-CN/docs/Web/API/Range
     if(!r.collapsed) {
       let isInSameBp = (startNode, endNode) => {
         return startNode.parentNode == endNode.parentNode
@@ -137,16 +140,18 @@ export default class Doc {
       if(isInSameBp(startNode, endNode)) {
         return
       }else {
-        throw new Error('不通过，我们不一样')
+        throw new Error('不在同一个行小块')
       }
     }
     // 更新toolbar
     // doc设定当前编辑bp部分
+
+    // 拿到当前正在编辑区域的dom节点
     let editNode  = r.commonAncestorContainer.parentNode
-    let editBp = editNode.parentNode
+    let editLine = editNode.parentNode
     if(!isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
-      if(hasClass(editBp, 'bp_txt')) {
-        this.updateStruture(editBp, r.startOffset, r, e)
+      if(hasClass(editLine, 'bp_txt')) {
+        this.updateStruture(editLine, r.startOffset, r, e)
         this.vm.updateToolbar(
           this.place.lineAbsolutePath,
           this.range.editNodeRelativeI)
@@ -158,21 +163,31 @@ export default class Doc {
       this.updateStruture(e, r.startOffset, r)
     }
   }
-  // node 当前bp， deleteI, r当前ranges对象
-  updateStruture(node, deleteI, r, exist) {
+
+  /**
+   *
+   * @param {*} node 当前bp(段落)
+   * @param {*} deleteI 光标起始节点位置数字
+   * @param {*} r 当前ranges对象
+   * @param {*} e
+   */
+  updateStruture(node, deleteI, r, e) {
     this.place = {
+      // 在哪页
       docPath: node.dataset.id.match(/\d+/g)[0],
-      // collapsed
+      // 当前行第几个节点
       lineNode: node,
       type: '',
-      // inTable: !!node.parentNode.parentNode.dataset.intable,
+      /* inTable: !!node.parentNode.parentNode.dataset.intable, */
+      // 行index
       lineRelativeI: parseInt(node.dataset.index),
+      // 具体节点
       lineAbsolutePath: node.dataset.id,
-      // bp绝对路径
+      // bp(段落)绝对路径
       bpAbsolutePath: node.dataset['bpId'],
       // bp相对的index
       bpRelativeI: parseInt(node.dataset['bpIndex']),
-      ...(exist||{})
+      ...(e||{})
     }
     let editTxtNode = r.commonAncestorContainer
     this.range = {

@@ -33,6 +33,13 @@ export function dateFormat(date, format) {
   return format;
 }
 
+// spliceMap(sliceIntercept, (b, i) => {
+//   if(isSpaceTxt(b.t_txt)) {
+//     sliceIntercept.splice(i, 1)
+//     return true
+//   }
+// })
+
 export let spliceMap = (arr, fn) =>{
   let i = 0;
   let length = arr.length;

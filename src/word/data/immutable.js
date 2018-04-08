@@ -1,4 +1,4 @@
-const {Map, getIn, setIn, List} = require('immutable')
+export const {Map, getIn, setIn, List} = require('immutable')
 export const setProperty = function (obj, name, value) {
   return obj.setIn(typeof name === 'string'? name.split('.'): name, value)
 }
@@ -19,11 +19,7 @@ export const getProperty = function (obj, name) {
   return getIn(obj, typeof name === 'string'? name.split('.'): name)
 }
 export const push = function(obj, name, ...value) {
-  // let o = getIn(obj, typeof name === 'string'? name.split('.'): name)
-  // o.push(...value)
-  // return obj.setIn(typeof name === 'string'? name.split('.'): name, o)
   name = typeof name === 'string'? name.split('.'): name
-  console.log(obj.getIn(name), 'obj')
   return obj.updateIn(name, (x) => {
     let n = List(x).toJS()
     console.log(value, n, 'hheleo')
@@ -75,11 +71,22 @@ export const supSplice = function (obj, name, i, num, data) {
     spliceData
   }
 }
+/**
+ * @description 将准备切割的行小块变成可变的(非Map)的数据结构
+ * @param {*} obj 数据map对象
+ * @param {*} name 当前行路径（类m.0.m.1.m.0.m） 用于找到当前行块m的的数组内容
+ * @param {*} begin 当前编辑的行小块index
+ * @param {*} end 当前行小块总数量
+ */
+// 1 4
 export const sliceMutable = function(obj ,name, begin, end) {
+  // 当前行块在数据结构中对应的数组
+  console.log(obj ,name, begin, end)
   let o = obj.getIn(typeof name === 'string'? name.split('.'): name)
   end = end == -1? o.length: end
   return end === undefined ? List(o.slice(parseInt(begin))).toJS(): List(o.slice(parseInt(begin), parseInt(end))).toJS()
 }
+
 export const setMutable = function(obj, name, value) {
     name = typeof name === 'string'? name.split('.'): name
     for(var i = 0; i < name.length - 1; i++) {

@@ -6,6 +6,8 @@ export function selection() {
   let selection = window.getSelection()
   return selection
 }
+
+// 获取光标包含节点和部分文本节点的文档片段。
 export function range() {
   return selection().getRangeAt(0)
 }

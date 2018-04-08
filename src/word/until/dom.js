@@ -59,6 +59,7 @@ export function addClass(el, cls) {
   }
 };
 
+// 返回当前节点和它的兄弟节点，以及当前节点的index
 export function siblingIncludeOwnerAndIndex(node) {
   let parent = node.parentNode
   let sibling = [...parent.childNodes]
@@ -87,6 +88,12 @@ export function prevNodes(node) {
   })
 }
 export function nextNodes(node) {
+  /**
+   * return {
+   *  index 当前小块节点index
+   *  sibling 当前行所有小块节点数组
+   * }
+   */
   let sio = siblingIncludeOwnerAndIndex(node)
   return sio.sibling.filter((sibli, i) => {
     // console.log(i, sio.index, 'i')
