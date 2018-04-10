@@ -42,8 +42,6 @@ export let easyB = (txt, configs, patchCode) => {
 // 默认段落对象
 export let normalBp = (configs, txt, patchCode) => {
   configs = configs||NORMAL_CONFIG;
-
-
   let normal = {
     hidden: false,
     t: 'bp',
@@ -58,6 +56,19 @@ export let normalBp = (configs, txt, patchCode) => {
   }
   return normal
 }
+
+export let emptyBp = () => {
+  let normal = {
+    hidden: false,
+    t: 'bp',
+    h: 0,
+    m: [],
+    bpStyle: {...NORMAL_CONFIG.bp}
+    // m: [easyB(txt!==undefined? txt: '\u00A0', configs)]
+  }
+  return normal
+}
+
 export let aloneBp = (configs, txt, patchCode) => {
   configs = configs||NORMAL_CONFIG;
   return {m:[easyB(txt!==undefined? txt: '\u00A0', configs, patchCode)], t: 'line'}

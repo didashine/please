@@ -163,7 +163,6 @@ export default class Doc {
       this.updateStruture(e, r.startOffset, r)
     }
   }
-
   /**
    *
    * @param {*} node 当前bp(段落)

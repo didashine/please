@@ -151,7 +151,9 @@
         })
         on('changePage', function(data, doc, down = true) {
           let docPath = parseInt(doc.place.docPath);
-          dc.commit('changePage', { docPath, doc });
+          dc.commit('changePage', { docPath, doc, data}).nextTick(() => {
+
+          });
           // dc.commit('autoBeautifyPage',
           //   {
           //     down,
@@ -263,8 +265,6 @@
             .nextTick((n) => {
               let txtNode = getTextNode(doc.range.editNode)
               doc.rangeSet(txtNode, doc.startOffset, doc.startOffset)
-
-              // test
               trigger('changePage', this.worder, doc)
               // trigger('beautifyPage', this.worder, doc)
             })
@@ -331,7 +331,9 @@
                 setTimeout(() => {
                   selection.addRange(r)
                 }, 0)
+                trigger('changePage', this.worder, doc)
               }
+
             })
             return void 0;
           }

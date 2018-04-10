@@ -1,12 +1,12 @@
 import timeTraveler from '../until/timeTraveler'
 import {newRow, edit, deleted, uStyle} from '../core/edit'
 import { splice, newArray, push, setProperty, unshift, getProperty,replace, sliceMutable, supSplice} from "./immutable";
-import {normalBp, normalTb,aloneBp, easyB, normalPage, normalTd} from "../core/core";
+import {normalBp, emptyBp, normalTb,aloneBp, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode, byClass} from "../until/dom";
 import {spliceMap, randomString, deepClone, _last} from '../until/until';
 // import {}
 import {calcLineRect } from '../core/overflow'
-import {NORMAL_CONFIG} from "../config/baseConfig";
+import {NORMAL_CONFIG,pageConfig} from "../config/baseConfig";
 let t = true
 let isSpaceTxt=(txt) => {
   let spaceReg = /^\u00A0$/
@@ -79,7 +79,6 @@ export default function dataCenter(data, vm, eventBind) {
         return {data: rs}
       }
 
-      // 目前啥都没做
       options['_beforeExec'](commit)
 
       if(options[commit]) {
@@ -1052,10 +1051,9 @@ export default function dataCenter(data, vm, eventBind) {
      *
      * @param {Number} index 当前页面索引
      */
-    pageData(index) {
+    pageData(data, index) {
       // 获取当前页面数据
       let pageData = getProperty(data,['m', index]);
-
       // 获取当前page操作区底部相对于浏览器顶部距离
       let pageDom = document.getElementsByClassName('page')[index];
       let pageTop = parseInt(pageDom.getBoundingClientRect().top);
@@ -1078,48 +1076,61 @@ export default function dataCenter(data, vm, eventBind) {
      *  @param {*} doc DOC类
      *  @param {*} index 递归时候传PageIndex
      */
-    changePage({docPath, doc, index}) {
-      // 获取总页数
-      let pageDomLength = document.getElementsByClassName('page').length;
-      // 通过当前段落的的bpid拿到当前在第几页
-      let currBp = doc.place.bpAbsolutePath;
-      let currPageIndex = index ? index : currBp.match(/\d+/g)[0];
-      currPageIndex = Number(currPageIndex);
-
-      // 根据第几页获取当前页的数据
-      let currPageData = options.pageData(currPageIndex);
-      let currData = data;
-
-      if (currPageData['pageFinalLineBottomToTop'] >= currPageData['pageBottomToTop']) {
-        // 如果下一页不存在,新建一页并更新数据源
-        if (currPageIndex == pageDomLength - 1) currData = options.newPage(data);
-
-        // 如果超出的最后一行bp只有一行(line),直接将该bp移除  否则移除该bp中的最后一行(line)
-        let pageBp= getProperty(currData,['m', currPageIndex, 'm']);
-        let bpData = getProperty(currData,['m', currPageIndex, 'm', pageBp.length-1, 'm']);
-        if (bpData.length <= 1) {
-          // 将最后一个bp从当前页干掉
-          let currBpData = getProperty(currData, ['m', currPageIndex, 'm']).pop();
-          getProperty(currData,['m', currPageIndex+1, 'm']).unshift(currBpData);
-          options.update(currData);
-          let bool = options['changePage']({docPath, doc, index: currPageIndex });
-          if (bool) {
-            options['changePage']({docPath, doc, index: currPageIndex + 1 })
+    ['changePage']: function({docPath, doc, data}) {
+      // 不影响原data
+      console.log(doc, doc.place.lineNode.getBoundingClientRect().x +doc.place.lineNode.getBoundingClientRect().width,);
+      let copy = new Array(getProperty(data, ['m']))[0];
+      let pageData = options.pageData(data, docPath);
+      if (pageData['pageFinalLineBottomToTop'] > pageData['pageBottomToTop']) {
+        // 超出高度统计字段
+        let overHeight = 0, overTotal = [], overBpI, overLineI, flag = false;
+        let bpList = copy[docPath]['m'];
+        for (let i = bpList.length - 1; i >= 0; i--) {
+          // 当前bp下line列表
+          let lineList = bpList[i]['m'];
+          for (let j = lineList.length - 1; j >= 0; j--) {
+            // 当前line height
+            let lineDom = document.getElementsByClassName(`m.${docPath}.m.${i}.m.${j}`)[0];
+            let lineHeight = lineDom.getBoundingClientRect().height;
+            overHeight += lineHeight;
+            if (pageData['pageFinalLineBottomToTop'] - overHeight < pageData['pageBottomToTop']) {
+              overBpI = i;
+              overLineI = j;
+              flag = true;
+              break;
+            }
           }
-        } else {
-          // 超出的行在一个包含多行的bp内情况下,拿到bp内最后一个行对象 {m:arr,t:'line'}
-          let currBpLineData = bpData.pop();
-          let newBp = normalBp(NORMAL_CONFIG);
-          newBp['m'].unshift(currBpLineData);
-          getProperty(currData,['m', currPageIndex+1, 'm']).unshift(newBp);
-          options['changePage']({docPath, doc, index: currPageIndex+1 });
-          let bool = options['changePage']({docPath, doc, index: currPageIndex });
-          if (bool) {
-            options['changePage']({docPath, doc, index: currPageIndex + 1 })
-          }
+          if (flag) break;
         }
+        for (let i = bpList.length - 1; i >= overBpI; i--) {
+          if (i != overBpI) {
+            overTotal.unshift(bpList.pop());
+            continue;
+          }
+          let lineList = bpList[i]['m'];
+          let newBp = emptyBp();
+          for (let j = lineList.length - 1; j >= overLineI; j--) {
+            newBp['m'].unshift(lineList.pop());
+          }
+          if (bpList[i]['m'].length <= 0) bpList.pop();
+          overTotal.unshift(newBp);
+        }
+
+        // 如果下一页不存在,新建一页并更新数据源
+        if (docPath == copy.length - 1) {
+          copy.push(normalPage());
+          // 超出内容超过一页高度未处理
+          overTotal.forEach(item => copy[docPath+1]['m'].unshift(item));
+          data = setProperty(data, ['m'], copy);
+          return { data };
+        }
+        overTotal.forEach(item => copy[docPath+1]['m'].unshift(item));
+
+        data = setProperty(data, ['m'], copy);
+        // console.log(getProperty(data, ['m']));
+        return options['changePage']({docPath: docPath+1, doc, data});
       } else {
-        return true;
+        return { data, };
       }
     },
     // 错误做法

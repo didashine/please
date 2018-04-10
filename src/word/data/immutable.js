@@ -1,4 +1,4 @@
-export const {Map, getIn, setIn, List} = require('immutable')
+export const { Map, getIn, setIn, List} = require('immutable')
 export const setProperty = function (obj, name, value) {
   return obj.setIn(typeof name === 'string'? name.split('.'): name, value)
 }
@@ -12,6 +12,7 @@ export const getMutable = function(obj, name) {
   return obj[name.pop()];
 
 }
+
 export const newArray = (o) => {
   return List(o).toJS()
 }
@@ -81,7 +82,6 @@ export const supSplice = function (obj, name, i, num, data) {
 // 1 4
 export const sliceMutable = function(obj ,name, begin, end) {
   // 当前行块在数据结构中对应的数组
-  console.log(obj ,name, begin, end)
   let o = obj.getIn(typeof name === 'string'? name.split('.'): name)
   end = end == -1? o.length: end
   return end === undefined ? List(o.slice(parseInt(begin))).toJS(): List(o.slice(parseInt(begin), parseInt(end))).toJS()
