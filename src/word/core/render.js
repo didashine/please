@@ -98,17 +98,17 @@ export let render = {
               <div data-type={line.t}>
                 <div class="kr-xu bp_indent" style={parse.call(this, 'bp', bp, line['m'], line)}
                 >
-                <span
-                  class={`bp_txt ${data_id}.m.${lineI}`}
-                  data-bp-id={data_id}
-                  data-bp-index={index}
-                  data-index={lineI}
-                  data-id={data_id+'.m.'+ lineI}
-                  style={ this.nowrap?
-                    { 'whiteSpace':'nowrap'}: {}}
-                >
-                  {render.renderB.call(this, h, bp, line, data_id+'.m.'+ lineI+ '.m')}
-                </span>
+                  <span
+                    class={`bp_txt ${data_id}.m.${lineI}`}
+                    data-bp-id={data_id}
+                    data-bp-index={index}
+                    data-index={lineI}
+                    data-id={data_id+'.m.'+ lineI}
+                    style={ this.nowrap?
+                      { 'whiteSpace':'nowrap'}: {}}
+                  >
+                    {render.renderB.call(this, h, bp, line, data_id+'.m.'+ lineI+ '.m')}
+                  </span>
                 </div>
               </div>
 

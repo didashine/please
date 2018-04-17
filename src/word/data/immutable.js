@@ -16,6 +16,7 @@ export const getMutable = function(obj, name) {
 export const newArray = (o) => {
   return List(o).toJS()
 }
+
 export const getProperty = function (obj, name) {
   return getIn(obj, typeof name === 'string'? name.split('.'): name)
 }

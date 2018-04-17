@@ -149,13 +149,13 @@ export default class Doc {
     // 拿到当前正在编辑区域的dom节点
     let editNode  = r.commonAncestorContainer.parentNode
     let editLine = editNode.parentNode
-    if(!isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
+    if(!e || !isHTMLElement(e)&&!hasClass(e.target, 'jfs-word')) {
       if(hasClass(editLine, 'bp_txt')) {
         this.updateStruture(editLine, r.startOffset, r, e)
         this.vm.updateToolbar(
           this.place.lineAbsolutePath,
           this.range.editNodeRelativeI)
-      }else {
+      } else {
         throw new Error('没选择')
       }
     }
@@ -193,10 +193,11 @@ export default class Doc {
       r,
       editTxtNode,
       editNode: editTxtNode.parentNode,
+      editLine: editTxtNode.parentNode.parentNode,
       editNodeRelativeI: parseInt(editTxtNode.parentNode.dataset.index),
       editNodeAbsolutePath: editTxtNode.parentNode.dataset.id,
       startOffset: r.startOffset,
-      endOffset: r.endOffset
+      endOffset: r.endOffset,
     }
   }
 }

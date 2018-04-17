@@ -22,8 +22,8 @@ export let globa_config = {
 }
 // 页配置
 export let pageConfig = {
-  operateHeight: 300, // 923
-  height: 400, // 1083
+  operateHeight: 923, // 923
+  height: 1083, // 1083
   width: 792,
   padding: '80px 80px',
   // 分页计算使用

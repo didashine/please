@@ -130,7 +130,7 @@ export function calcLineRect(relativeNode, overNodes) {
     }
   }
 }
-export let overflow = (relativeNode, overNodes, max) => {
+/* export let overflow = (relativeNode, overNodes, max) => {
  //  console.time('calcOver');
   let overChunks = [];
   let range = new Range();
@@ -233,7 +233,7 @@ export let overflow = (relativeNode, overNodes, max) => {
   //console.log(overChunks, 'chunkC')
   // console.timeEnd('calcOver');
   return { overChunks, isOver: !!overChunks.length }
-}
+} */
 /**
  *
  * @param {*} relativeNode 当前行小块节点
@@ -241,6 +241,7 @@ export let overflow = (relativeNode, overNodes, max) => {
  * @param {*} max 最大宽度
  */
 export let _overflow = (relativeNode, overNodes, max) => {
+  // debugger
   let overChunks = [];
   let range = new Range();
   // 当前行节点的坐标信息
@@ -279,7 +280,7 @@ export let _overflow = (relativeNode, overNodes, max) => {
         // 表示换行模式下换行了
         FONT_RECT_X_ARR.push([{node: overNode, rcArr: []}]);
         // 如果是当前行小块后面的 小块节点或者小块节点的非第一个txt内容?
-        if(nodeI>0||i-1> 0) {
+        if(nodeI>0||i-1>=0) {
           if (!chunk.length) {
             // 0~i-1 的txt
             let str = txt.substring(0, i);
@@ -290,6 +291,7 @@ export let _overflow = (relativeNode, overNodes, max) => {
               originStr: txt,
               node: overNode,
               nodeI: nodeI,
+              // 判断超出换行
               switchLine: false,
               startI: i
             })
@@ -336,19 +338,7 @@ export let _overflow = (relativeNode, overNodes, max) => {
     eq: function(i) {
       return overChunks[i];
     },
-    isOver: (function(){
-      // if(overChunks.length<=0) return false;
-      // if(overChunks.length=== 1) {
-      //   let overChunk = overChunks[0];
-      //   let chunk = overChunk['chunk'];
-      //   if(chunk.length === 2) {
-      //     return !chunk[0]['switchLine']&&chunk[1]['switchLine'];
-      //   }
-      //   return true;
-      // }
-      // return true;
-      return overChunks.length;
-    }()),
+    isOver: overChunks.length,
     lastOverW: (function() {
       if(overChunks.length) {
         let lastChunk =  _last(overChunks);

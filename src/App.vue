@@ -151,8 +151,16 @@
         })
         on('changePage', function(data, doc, down = true) {
           let docPath = parseInt(doc.place.docPath);
-          dc.commit('changePage', { docPath, doc, data}).nextTick(() => {
-
+          dc.commit('changePage', { docPath, doc, data}).nextTick(e => {
+            let changeCursor = e['changeCursor'];
+            console.log(changeCursor);
+            if (changeCursor['change']) {
+              let node = document.getElementsByClassName(`m.${changeCursor['pageI']}.m.${changeCursor['bpI']-changeCursor['startBpI']}.m.${changeCursor['lineI']-changeCursor['startLineI']}.m.${changeCursor['editNodeRelativeI']}`)[0];
+              let selection = window.getSelection()
+              selection.removeAllRanges();
+              let r = range(node, changeCursor['startOffset'], changeCursor['startOffset']);
+              selection.addRange(r);
+            }
           });
           // dc.commit('autoBeautifyPage',
           //   {
@@ -328,9 +336,8 @@
                 let selection = window.getSelection()
                 selection.removeAllRanges(doc.range.r)
                 let r = range(node, u.start, u.start)
-                setTimeout(() => {
-                  selection.addRange(r)
-                }, 0)
+                selection.addRange(r);
+                doc.updateDoc();
                 trigger('changePage', this.worder, doc)
               }
 
@@ -446,6 +453,9 @@
           // if(!ranges().collapsed) {e.preventDefault(); return void 0}
         })
         // toolbar组件触发的生成select.table事件
+        /**
+         * @param {*} selTable  [行，列]
+         */
         on('toolbar.select.table', (selTable) => {
           console.time('newTable')
           dc.commit('newTable', {
@@ -460,7 +470,7 @@
               node: document.getElementsByClassName(u.bpPath)[0].parentNode.parentNode,
               path: u.bpPath
             })
-            trigger('beautifyPage', this.worder, doc)
+            // trigger('beautifyPage', this.worder, doc)
           })
         })
         on('toolbar.select.font', (value, type) => {
@@ -557,7 +567,6 @@
                         <div class="bugle lb" contentEditable='false'></div>
                         <div class="bugle rb" contentEditable='false'></div>
                       </div>
-
                       {
                         this._l(page.m, (pm, pmi) => {
                           return render.renderByType.call(

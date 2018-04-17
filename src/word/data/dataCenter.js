@@ -4,7 +4,6 @@ import { splice, newArray, push, setProperty, unshift, getProperty,replace, slic
 import {normalBp, emptyBp, normalTb,aloneBp, easyB, normalPage, normalTd} from "../core/core";
 import {getTextNode, hasClass, getOffset, prevNode, byClass} from "../until/dom";
 import {spliceMap, randomString, deepClone, _last} from '../until/until';
-// import {}
 import {calcLineRect } from '../core/overflow'
 import {NORMAL_CONFIG,pageConfig} from "../config/baseConfig";
 let t = true
@@ -113,9 +112,9 @@ export default function dataCenter(data, vm, eventBind) {
     },
     _executed(commit, v) {
       if(v['data']) {
-        if(commit === 'autoBeautifyPage'&&v['doNoThing']) {
-          return;
-        }
+        // if(commit === 'autoBeautifyPage'&&v['doNoThing']) {
+        //   return;
+        // }
         options.u(v['data'], commit, uid);
         eventBind.trigger('save', v['data']);
       }
@@ -190,47 +189,6 @@ export default function dataCenter(data, vm, eventBind) {
       data = setProperty(data, newEditElClass+'.s.heads', false)
       history.record(data)
       return {newEditElClass: newEditElClass, data}
-
-      // <<<<<<<
-      // let gep = getProperty(data, place.bpAbsolutePath+'.m')
-      // let currentBp = newArray(gep)
-      // let oldBp = currentBp[range.editNodeRelativeI]
-      // let currentEditI = range.editNodeRelativeI
-      // let spaceReg = /^\u00A0/g
-      // let gen = [1, 0, 1]
-      // // alert(JSON.stringify(currentBp))
-      // if((doc.getRetainsTxt().match(spaceReg)&&doc.getRetainsTxt().length<2)||doc.getRetainsTxt().trim() === '') {
-      //   // 删除当前
-      //   currentBp.splice(currentEditI, 1)
-      //   // 生成全新
-      //   currentBp.splice(currentEditI+1, 0, easyB(doc.getRetainsTxt(), conf))
-      //   gen = [0, 1, 1]
-      // }
-      // if(doc.getInterceptTxt().match(spaceReg)||doc.getInterceptTxt().trim() === '') {
-      //   gen[2] = 0
-      // }
-      // if(!gen[0]) {
-      //   if(gen[2]) {
-      //     currentBp.splice(currentEditI+1, 0, {...oldBp, t_txt: doc.getInterceptTxt()} )
-      //   }
-      // }
-      // if(gen[0]) {
-      //   // 修改当前的
-      //   currentBp[currentEditI].t_txt = doc.getRetainsTxt()
-      //   // 生成新的
-      //   currentBp.splice(currentEditI+1, 0, easyB(undefined, conf))
-      //   if(gen[2]) {
-      //     currentBp.splice(currentEditI+2, 0, {...oldBp, t_txt: doc.getInterceptTxt()} )
-      //   }
-      //   // 补充
-      //
-      // }
-      // data = setProperty(data, place.bpAbsolutePath+'.m', currentBp)
-      // let currAbPath = range.editNodeAbsolutePath.split('.').slice(0, -1)
-      // let newEditElClass = currAbPath.join('.')+'.'+ (gen[0] ? currentEditI+1: currentEditI)
-      // data = setProperty(data, newEditElClass+'.s.heads', false)
-      // history.record(data)
-      // return {newEditElClass: newEditElClass, data}
     },
 
     ['height.determination']({doc, page, pageI}) {
@@ -379,7 +337,7 @@ export default function dataCenter(data, vm, eventBind) {
      *
      * @param {*} data map数据
      * @param {*} doc DOC类
-     * @param {*} over
+     * @param {*} over 记录了换行部分每个文本坐标的大合集
      * @param {*} conf
      * @param {*} nowrap
      */
@@ -393,10 +351,12 @@ export default function dataCenter(data, vm, eventBind) {
       // 超出的大块内容合集
       let overChunks = over['overChunks'];
 
-      // 最后一个txt的left
+      // 超出的宽
       let overW = over['lastOverW'];
+      // 超出需要换行的那行下面还有几行
       let surplusNum = getProperty(data, doc.place.bpAbsolutePath+'.m').length- 1- doc.place.lineRelativeI;
       // console.log(surplusNum, overChunks, 'Y');
+      // 当前bp下行数组
       let lineLocation = doc.getLineLocation();
       // 相对于在当前处理行的超出节点序号
       let ONI_IN_CURRLINE;
@@ -406,6 +366,7 @@ export default function dataCenter(data, vm, eventBind) {
       let disposeNodeAbsolutePath;
       // 需要处理的line绝对路径
       let disposeLineAbsolutePath
+      // 改变指针的方法？
       let flexibleCursor = (overChunk, originOffsetStart) => {
         // let offsetStart = 0;
         for(let ci= 0; ci< overChunk['chunk'].length; ci++) {
@@ -432,7 +393,7 @@ export default function dataCenter(data, vm, eventBind) {
         // console.log(disposeLineAbsolutePath, lineLocation, lineRelativeI, ONI_IN_CURRLINE)
         disposeLineAbsolutePath = `${lineLocation}.${lineRelativeI}`
         let lineNodeNum = getProperty(data, disposeLineAbsolutePath+ '.m').length;
-        // 移除掉的node个数
+        // 超出字段所在行小块后面需要被切除的行小块数量
         let spliceNum = lineNodeNum-1 - (ONI_IN_CURRLINE);
         let dataV2;
         // 删除后面多余的
@@ -521,10 +482,6 @@ export default function dataCenter(data, vm, eventBind) {
         data = options['auto.space']({data, doc, lineRelativeI, supplement, overW, surplusNum})
       }
      // console.timeEnd('start')
-      // <<<<<<<<<<<<<
-      // 光标定位处理
-      // 第一次段落分行后的下标
-      // let
       lineRelativeI = overChunks[0]['chunk'].length+ doc.place.lineRelativeI;
       // 第一次段落分行后的行路径
       let endLineNodePath = `${doc.getLineLocation()}.${lineRelativeI}.m.0`;
@@ -538,7 +495,8 @@ export default function dataCenter(data, vm, eventBind) {
         data,
         changeCursor: cursor['change'],
         nodePath: `${doc.getLineLocation()}.${doc.place.lineRelativeI+ cursor['i']}.m.0`,
-        start: cursor['start']}
+        start: cursor['start']
+      }
     },
     // 插入一行
     ['insert.line']({data, path, txt, conf, index, patchCode}) {
@@ -726,7 +684,7 @@ export default function dataCenter(data, vm, eventBind) {
     },
     // 数据更新统一接口
     update: function(data) {
-      this.worder = data
+      this.worder = data;
     }.bind(vm),
     // 快捷
     u: function(data, commit, psd) {
@@ -1068,32 +1026,62 @@ export default function dataCenter(data, vm, eventBind) {
       let pageFinalLineBottomToTop = parseInt(pageFinalLineRect['top'] + pageFinalLineRect['height']);
       return {
         pageBottomToTop,
+        pageFinalLineClassName,
         pageFinalLineBottomToTop,
       }
     },
     /**
+     *  @description  当前未考虑超出高度超过空白页可操作区域高度情况,未考虑表格分页情况
      *  @param {*} docPath 当前页面index
      *  @param {*} doc DOC类
-     *  @param {*} index 递归时候传PageIndex
+     *  @param {*} data map数据
+     *  @param {*} recursionHeight 递归下来的上一页超出高度
+     *  @param {*} copy 递归下来修改过的data副本
+     *  @param {*} pageI 光标所在页index
+     *  @param {*} changeCursor 是否需要重新定位光标位置
      */
-    ['changePage']: function({docPath, doc, data}) {
+    ['changePage']: function({docPath, doc, data, recursionHeight=0, copyData, pageI, changeCursor}) {
       // 不影响原data
-      console.log(doc, doc.place.lineNode.getBoundingClientRect().x +doc.place.lineNode.getBoundingClientRect().width,);
-      let copy = new Array(getProperty(data, ['m']))[0];
+      let copy = copyData || newArray(getProperty(data, ['m']));
       let pageData = options.pageData(data, docPath);
-      if (pageData['pageFinalLineBottomToTop'] > pageData['pageBottomToTop']) {
+      // 记录光标所在页数
+      pageI = pageI || docPath;
+      // 先拿到超出后截断前的光标位置 后面通过计算得到换页后如果光标跟随换页，光标需要在的位置
+      let startOffset = doc.range.startOffset;
+      // 光标所在行类名
+      let cursorLine = doc.place.lineAbsolutePath;
+      // 记录改变光标数据需要的信息
+      changeCursor = changeCursor || {
+        editNodeRelativeI: doc.range.editNodeRelativeI,
+        startOffset: doc.range.startOffset,
+        pageI: pageI+1,
+      };
+      if (pageData['pageFinalLineBottomToTop'] + recursionHeight > pageData['pageBottomToTop']) {
         // 超出高度统计字段
-        let overHeight = 0, overTotal = [], overBpI, overLineI, flag = false;
+        let overHeight = 0,overTotal = [], overBpI, overLineI, flag = false;
         let bpList = copy[docPath]['m'];
+
         for (let i = bpList.length - 1; i >= 0; i--) {
           // 当前bp下line列表
           let lineList = bpList[i]['m'];
           for (let j = lineList.length - 1; j >= 0; j--) {
+            // 切割之前判断如果光标在要被切割掉的line内，说明要重定向光标位置
+            if ( cursorLine == `m.${docPath}.m.${i}.m.${j}` ) {
+              changeCursor['change'] = true;
+              changeCursor['bpI'] = i;
+              changeCursor['lineI'] = j;
+            }
             // 当前line height
             let lineDom = document.getElementsByClassName(`m.${docPath}.m.${i}.m.${j}`)[0];
             let lineHeight = lineDom.getBoundingClientRect().height;
             overHeight += lineHeight;
-            if (pageData['pageFinalLineBottomToTop'] - overHeight < pageData['pageBottomToTop']) {
+            if (pageData['pageFinalLineBottomToTop'] + recursionHeight - overHeight < pageData['pageBottomToTop']) {
+              // 记录换页起始行，用于计算换页后光标在第几行
+              if (changeCursor['pageI']-1 == docPath) {
+                changeCursor['startBpI'] = i;
+                changeCursor['startLineI'] = j;
+              }
+
               overBpI = i;
               overLineI = j;
               flag = true;
@@ -1102,6 +1090,7 @@ export default function dataCenter(data, vm, eventBind) {
           }
           if (flag) break;
         }
+
         for (let i = bpList.length - 1; i >= overBpI; i--) {
           if (i != overBpI) {
             overTotal.unshift(bpList.pop());
@@ -1122,15 +1111,16 @@ export default function dataCenter(data, vm, eventBind) {
           // 超出内容超过一页高度未处理
           overTotal.forEach(item => copy[docPath+1]['m'].unshift(item));
           data = setProperty(data, ['m'], copy);
-          return { data };
+          return { data, changeCursor};
         }
         overTotal.forEach(item => copy[docPath+1]['m'].unshift(item));
 
-        data = setProperty(data, ['m'], copy);
         // console.log(getProperty(data, ['m']));
-        return options['changePage']({docPath: docPath+1, doc, data});
+        return options['changePage']({docPath: docPath+1, doc, data, recursionHeight: overHeight, copyData: copy, changeCursor, pageI});
       } else {
-        return { data, };
+        data = setProperty(data, ['m'], copy);
+        // recursionHeight 说明是前方有换页递归下来的
+        return { data, changeCursor };
       }
     },
     // 错误做法
